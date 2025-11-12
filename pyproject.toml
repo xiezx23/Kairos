@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "edq"
+version = "0.1.1"
+description = "An efficient quantization(INT4/8) method for LLMs on edge device."
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+]
+dependencies = [
+    "accelerate==0.34.2",
+    "torch==2.6.0", "tokenizers>=0.12.1",
+    "transformers==4.46.0",
+    "datasets==2.21.0", "modelscope==1.28.0",
+    "setuptools==58",
+
+    "colorama", "matplotlib", "seaborn"
+]
+
+[tool.setuptools.packages.find]
+exclude = ["results*", "scripts*", "examples*"]
+
+[tool.wheel]
+exclude = ["results*", "scripts*", "examples*"]

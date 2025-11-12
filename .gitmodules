@@ -1,0 +1,7 @@
+[submodule "thirdparty/cutlass"]
+	path = thirdparty/cutlass
+	url = https://github.com/NVIDIA/cutlass.git
+
+[submodule "thirdparty/marlin"]
+	path = thirdparty/marlin
+	url = https://github.com/IST-DASLab/marlin.git

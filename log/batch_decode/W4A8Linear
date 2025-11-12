@@ -1,0 +1,390 @@
+In device: NVIDIA A100 80GB PCIe
+Using Model: /data/share/models/Qwen/Qwen2___5-7B-Instruct
+use local calibration
+Quantize Model peak VRAM usage: 15.12 GB
+Model Size peak VRAM usage: 5.19 GB
+Test Model for batch_decode
+------PERFORMANCE REPORT------
+Input Lens: 1
+TTFT:       25.29 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 2
+TTFT:       25.31 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 3
+TTFT:       25.33 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 4
+TTFT:       25.42 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 5
+TTFT:       25.42 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 6
+TTFT:       25.40 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 7
+TTFT:       25.45 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 8
+TTFT:       25.42 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 9
+TTFT:       25.43 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 10
+TTFT:       25.39 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 11
+TTFT:       25.41 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 12
+TTFT:       25.39 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 13
+TTFT:       25.39 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 14
+TTFT:       25.43 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 15
+TTFT:       25.44 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 16
+TTFT:       25.43 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 17
+TTFT:       25.37 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 18
+TTFT:       25.35 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 19
+TTFT:       25.43 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 20
+TTFT:       25.40 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 21
+TTFT:       25.41 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 22
+TTFT:       25.44 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 23
+TTFT:       25.47 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 24
+TTFT:       25.43 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 25
+TTFT:       25.45 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 26
+TTFT:       25.38 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 27
+TTFT:       25.46 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 28
+TTFT:       25.37 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 29
+TTFT:       25.43 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 30
+TTFT:       25.43 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 31
+TTFT:       25.48 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 32
+TTFT:       27.96 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 33
+TTFT:       25.48 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 34
+TTFT:       25.50 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 35
+TTFT:       25.42 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 36
+TTFT:       25.36 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 37
+TTFT:       25.36 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 38
+TTFT:       25.34 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 39
+TTFT:       25.40 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 40
+TTFT:       25.37 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 41
+TTFT:       25.36 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 42
+TTFT:       25.40 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 43
+TTFT:       25.39 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 44
+TTFT:       25.40 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 45
+TTFT:       25.39 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 46
+TTFT:       25.41 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 47
+TTFT:       25.41 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 48
+TTFT:       25.44 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 49
+TTFT:       25.47 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 50
+TTFT:       25.43 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 51
+TTFT:       25.46 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 52
+TTFT:       25.44 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 53
+TTFT:       25.44 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 54
+TTFT:       25.46 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 55
+TTFT:       25.43 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 56
+TTFT:       25.48 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 57
+TTFT:       25.42 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 58
+TTFT:       25.51 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 59
+TTFT:       25.53 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 60
+TTFT:       25.42 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 61
+TTFT:       25.48 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 62
+TTFT:       25.56 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 63
+TTFT:       25.60 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------
+------PERFORMANCE REPORT------
+Input Lens: 64
+TTFT:       25.62 ms
+TPOT:        0.00 ms/token
+Peak VRAM:   5.21 GB
+------------------------------

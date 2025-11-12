@@ -1,0 +1,4 @@
+opencompass eval/open_compass/eval_scripts/template/eval_full_base.py
+opencompass eval/open_compass/eval_scripts/template/eval_quant_base.py
+opencompass eval/open_compass/eval_scripts/template/eval_full_instruct.py
+opencompass eval/open_compass/eval_scripts/template/eval_quant_instruct.py
