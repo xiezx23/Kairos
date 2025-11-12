@@ -1,0 +1,113 @@
+// Author: Zexi Xie.
+
+#include <torch/extension.h>
+#include <ATen/ATen.h>
+#include <ATen/cuda/CUDAContext.h>
+#include <cuda_fp16.h>
+#include <cuda_runtime.h>
+#include <stdio.h>
+
+__device__ __forceinline__ void permute_2_uint4(const uint4 a, const uint4 b, uint4& c, uint4& d) {
+    const uint mask_l = 0x0f0f0f0f;
+    const uint mask_h = 0xf0f0f0f0;
+    
+    c.x = ((b.x & mask_l) << 4) | (a.x & mask_l);
+    c.y = ((b.y & mask_l) << 4) | (a.y & mask_l);
+    c.z = ((b.z & mask_l) << 4) | (a.z & mask_l);
+    c.w = ((b.w & mask_l) << 4) | (a.w & mask_l);
+    
+    d.x = ((a.x & mask_h) >> 4) | (b.x & mask_h);
+    d.y = ((a.y & mask_h) >> 4) | (b.y & mask_h);
+    d.z = ((a.z & mask_h) >> 4) | (b.z & mask_h);
+    d.w = ((a.w & mask_h) >> 4) | (b.w & mask_h);
+}
+
+__global__ void trans_layout_c16_to_c8_kernel(
+        uint4* __restrict__ output,
+        const uint4* __restrict__ input,
+        const int R, const int C) {
+    // every block will solve the layout transformation for 16 * int32(8 * 4bit) = 4 * uint4 each turn.
+    const int row = blockIdx.x;
+    const int tid = threadIdx.x;
+    const int elems_per_thread = 4; 
+    const int solve_end = C / elems_per_thread;
+
+    uint4 reg_input[4];  
+    uint4 reg_output[4];  
+    const uint4* input_ptr = input + row * C;
+    uint4* output_ptr = output + row * C;
+    for (int cur_tid = tid; cur_tid < solve_end; cur_tid += blockDim.x) {
+        const int k_idx = cur_tid * elems_per_thread;
+
+        reg_input[0] = __ldcg(input_ptr + 0 + k_idx);
+        reg_input[1] = __ldcg(input_ptr + 1 + k_idx);
+        reg_input[2] = __ldcg(input_ptr + 2 + k_idx);
+        reg_input[3] = __ldcg(input_ptr + 3 + k_idx);
+
+        // Permute 2*2*4 int32 data
+        permute_2_uint4(reg_input[0], reg_input[1], reg_output[0], reg_output[2]);
+        permute_2_uint4(reg_input[2], reg_input[3], reg_output[1], reg_output[3]);
+
+        // Write-through to global memory.
+        __stwt(output_ptr + 0 + k_idx, reg_output[0]);
+        __stwt(output_ptr + 1 + k_idx, reg_output[1]);
+        __stwt(output_ptr + 2 + k_idx, reg_output[2]);
+        __stwt(output_ptr + 3 + k_idx, reg_output[3]);
+    }
+}
+
+void trans_layout_c16_to_c8(
+        torch::Tensor &output,      // [K/16, N*16/8], dtype=torch.int32
+        torch::Tensor &input        // [K/16, N*16/8], dtype=torch.int32
+    ) {
+    const int R = input.size(0);
+    const int C = input.size(1);
+    
+    const dim3 grid(R);
+    const dim3 block(128);
+    
+    const cudaStream_t stream = at::cuda::getCurrentCUDAStream().stream();
+    
+    trans_layout_c16_to_c8_kernel<<<grid, block, 0, stream>>>(
+        reinterpret_cast<uint4*>(output.data_ptr()),
+        reinterpret_cast<const uint4*>(input.data_ptr()),
+        R, C/4);
+}
+
+
+// The layout _permute for W4A8 is: (Output)
+// tensor([[   0,   32,    8,   40,   16,   48,   24,   56],
+//         [ 256,  288,  264,  296,  272,  304,  280,  312],
+//         [ 512,  544,  520,  552,  528,  560,  536,  568],
+//         [ 768,  800,  776,  808,  784,  816,  792,  824],
+//         [  64,   96,   72,  104,   80,  112,   88,  120],
+//         [ 320,  352,  328,  360,  336,  368,  344,  376],
+//         [ 576,  608,  584,  616,  592,  624,  600,  632],
+//         [ 832,  864,  840,  872,  848,  880,  856,  888],
+//         [ 128,  160,  136,  168,  144,  176,  152,  184],
+//         [ 384,  416,  392,  424,  400,  432,  408,  440],
+//         [ 640,  672,  648,  680,  656,  688,  664,  696],
+//         [ 896,  928,  904,  936,  912,  944,  920,  952],
+//         [ 192,  224,  200,  232,  208,  240,  216,  248],
+//         [ 448,  480,  456,  488,  464,  496,  472,  504],
+//         [ 704,  736,  712,  744,  720,  752,  728,  760],
+//         [ 960,  992,  968, 1000,  976, 1008,  984, 1016]]) ... of shape(32,32)
+// The layout _permute for W4A16 is: (Input)
+// tensor([[   0,  128,    8,  136,   16,  144,   24,  152],
+//         [ 256,  384,  264,  392,  272,  400,  280,  408],
+//         [ 512,  640,  520,  648,  528,  656,  536,  664],
+//         [ 768,  896,  776,  904,  784,  912,  792,  920],
+//         [  32,  160,   40,  168,   48,  176,   56,  184],
+//         [ 288,  416,  296,  424,  304,  432,  312,  440],
+//         [ 544,  672,  552,  680,  560,  688,  568,  696],
+//         [ 800,  928,  808,  936,  816,  944,  824,  952],
+//         [  64,  192,   72,  200,   80,  208,   88,  216],
+//         [ 320,  448,  328,  456,  336,  464,  344,  472],
+//         [ 576,  704,  584,  712,  592,  720,  600,  728],
+//         [ 832,  960,  840,  968,  848,  976,  856,  984],
+//         [  96,  224,  104,  232,  112,  240,  120,  248],
+//         [ 352,  480,  360,  488,  368,  496,  376,  504],
+//         [ 608,  736,  616,  744,  624,  752,  632,  760],
+//         [ 864,  992,  872, 1000,  880, 1008,  888, 1016]]) ... of shape(32,32)
+// Every row (8 * int4) store in int32 
+// Every 4 row store in uint4, and they are grouped, the high and low bits can be permute together.
