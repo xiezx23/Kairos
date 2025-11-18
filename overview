@@ -1,0 +1,8 @@
+Our dynamic quantization framework aims to adapt to the dynamic workloads in LLM inference by decoupling the storage format of model weights and the computational precision.
+The overall workflow of Kairos is shown in Figure \ref{fig:overall}.
+Kairos takes a full precision LLM as input, and compresses it into a 4-bit model by using two-stage quantization (TSQ) algorithm.
+Then, Kairos performs performance profiling for different computation path on the given hardware based on the weight shape of the model to obtains a hardware-aware lookup table (LUT).
+We explain the details of this two part in Section \ref{subsec:TSQ} and Section \ref{subsec:profiler}.
+The previous two parts are completed offline and only need to be done once.
+Based on the quantized model and the performance LUT, Kairos constructs a precision converter for dynamically selecting the optimal computation path for real-time workloads.
+We introduce the converter in Section \ref{subsec:converter}.

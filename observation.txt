@@ -1,0 +1,78 @@
+Observation and Analysis
+
+Insight-1: No Single Strategy Fits All Workloads
+Due to the variation of input text length, the input dimension $M$ of linear layer is also changing in the prefill phase.
+This requires the linear layer to cope with different workloads.
+We observe that in the small region such as $M \in [1, 16)$, the W4A16 strategy shows lower latency than other strategies.
+When $M \in [16, 60)$ region, the FP16 strategy shows the lowest latency.
+In the large region such as $M \in [60, 128)$, the W8A8 strategy shows better performance because it can leverage integer computation on hardware.
+Based on the above phenomenon, we conclude that no single quantization strategy fits all workloads in prefilling.
+Unfortunately, existing works adopt predetermined quantization methods, which are inefficient in prefilling.
+Further, we present Lemma~\ref{lem-1} and Lemma~\ref{lem-2} as follows. 
+\begin{lemma} 
+When the linear layer is in compute-bound scenarios, there is a linear relationship between $M$ and latency.
+% When $M$ is particularly large, there is a linear relationship between latency and $M$.
+\label{lem-1}
+\end{lemma}
+Existing methods fuse dequantization and matrix multiplication (Matmul) into one kernel to reduce memory access overhead~\cite{SMQ, AWQ, GPTQ, marlin, qserve, QQQ, ladder}.
+The fusion kernel use one thread block to compute one tile of the output matrix.
+The total number of tiles is calculated by $T_{tile} = \frac{MN}{M_{tile}N_{tile}}$, where $(M_{tile},N_{tile})$ represent the tile size.
+% Since the tile size is typically fixed, $T_{tile} $ is proportional to $M$. 
+According to Roofline Model~\cite{roofline}, in compute-bound scenarios, the performance of the execution is limited by the hardware performance $P$.
+Therefore, the latency of linear layer can be represented as follows.
+\begin{equation}
+    L = \frac{C_{tile} T_{tile}}{P}=\frac{C_{tile} N}{P M_{tile}N_{tile}}M
+    \label{eq:latency}
+\end{equation}
+where $C_{tile}$ is the number of operations per tile and it is a constant because the tile size is typically fixed.
+Since only $M$ is variable in formula~\ref{eq:latency}, there is a linear relationship between $M$ and latency $L$.
+
+% In compute-bound scenarios, the GPU's Streaming Multiprocessors (SMs) is fully occupied. 
+% As each tile requires a similar execution time, the total execution time is determined by the number of tiles that need processing, leading to the observed linear scaling of runtime with M.
+
+% According to Roofline Model~\cite{roofline}, when $M$ is large, the execution of linear layer has high arithmetic intensity.
+% The performance of the execution is limited by the hardware performance $P$.
+% Meanwhile, the main calculation part of the linear layer is matrix multiplication, and it takes $C=2MNK$ operations. 
+% Therefore, the main latency is calculated by $L = \frac{2NK}{P}M$, where only $M$ is the variable and $\frac{2NK}{P}$ is the slopes.
+
+\begin{lemma}
+Different quantization strategies have different slopes in the linear relationship between $M$ and latency.
+\label{lem-2}
+\end{lemma}
+Different quantization strategies use different fusion operators within each tile.
+This results in different $C_{tile}$ and typically different tile size.
+Additionally, strategies using integer Matmul can obtain higher peak performance $P$ than those using floating-point Matmul, depending on the hardware.
+Therefore, the slope of the linear relationship differs across quantization strategies.
+
+Figure~\ref{fig:latency}(b) shows experimental results to validate Lemma~\ref{lem-1} and Lemma~\ref{lem-2}.
+As M increases, the latency for all strategies grows proportionally.
+Different slopes are observed in different methods.
+
+
+Insight-2: Switching Quantization Strategies at Runtime is Profitable
+Based on insight-1, selecting quantization strategies for linear layers according to each workload can accelerate prefilling.
+The obstacle to switching quantization strategies at runtime is that the weights have been
+quantized offline.
+For instance, a linear layer using W4A16 stores a 4-bit weight.
+If we wish to use W8A8 for computation, we have to convert the precision of weight to INT8 at runtime.
+Fortunately, for a linear layer, its weight shape is fixed.
+Thus, the overhead of weight conversion is fixed as well. 
+We conclude this observation as Lemma~\ref{lem-3}.
+\begin{lemma} 
+The overhead of weight conversion is a constant, as the size of the weights is fixed.
+\label{lem-3}
+\end{lemma}
+
+
+If the overhead of weight conversion is smaller than the speedup gained from the new strategy, we can ensure that switching quantization strategies is profitable. 
+Based on Lemma~\ref{lem-2}, the latency gap between the superior strategy and the original one increases linearly with M.
+Since the overhead of weight conversion remains constant (Lemma~\ref{lem-3}), there exist a M* such that switching strategies can obtain acceleration when M exceeds M*.
+
+\begin{center}
+\fbox{\parbox{0.47\textwidth}{
+Based on the above analysis, we design a dynamic quantization framework to accelerate prefilling.
+We decouples storage and computation to achieve the switching of quantization strategies.
+For storage, weights is quantized to 4-bit to reduce memory overhead.
+For computation, different quantization strategies are used to accelerate prefilling at runtime.
+Moreover, we consistently use W4A16 for decoding because W4A16 is typically the optimal strategy in memory-bound scenarios.
+}}

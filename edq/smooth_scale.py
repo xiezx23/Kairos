@@ -9,9 +9,9 @@ from transformers.models.llama.modeling_llama import LlamaDecoderLayer, LlamaRMS
 from transformers.models.qwen2.modeling_qwen2 import Qwen2DecoderLayer, Qwen2RMSNorm
 
 from  utils.color_print import *
+from utils.global_config import quant_strategy
 from edq.simu_quant import SimuQuantLinear, RealQuantLinearWithScale
 from edq.quant_config import LinearQuantConfig
-from utils.analyse_tensor import analyse_tensor
 from edq.quant_model import set_op_by_name, get_name_linears
 from edq.catch_tensor import catch_embedding_output
 
@@ -75,33 +75,26 @@ def _smooth_scale_block(layer, prev_op, child_name2quant:list, input,
 
     # Search the best scales
     best_loss = float("inf"); best_scales = None; best_r = None
-    n_grid = 40
+    n_grid = 20
     name2linears = get_name_linears(layer)
     for ratio in range(n_grid):
         r = ratio*1.0 / n_grid
-        r = 0.5
         scales = act_magnitude.pow(r).clamp(min=1e-4).view(-1)
-        # scales = scales.div_(scales.mean()).view(1,-1)
         scales = (scales / (scales.max() * scales.min()).sqrt()).view(1,-1)
         for name in child_name2quant:
             linear = name2linears[name]
             # NOTE: The q_config here must be the same as quant_model.
-            if linear.in_features <= 4096 and linear.out_features <= 4096:
-                q_config = LinearQuantConfig("W8A8Linear")
-            else:
-                q_config = LinearQuantConfig("W4A16Linear", group_size=128)
-            # q_config = LinearQuantConfig("W8A8Linear")
-            # q_config = LinearQuantConfig("W4A16Linear", group_size=128)
+            q_config = LinearQuantConfig(quant_strategy)
             q_linear = RealQuantLinearWithScale.from_module(linear, q_config, scales=scales)
-        set_op_by_name(layer, name, q_linear)
+            set_op_by_name(layer, name, q_linear)
         cur_out = detected_module(detected_input, **kwargs)
         if isinstance(cur_out, tuple): cur_out = cur_out[0]
-        loss = (ref_out-cur_out).float().pow(2).mean().item()
+        loss = (ref_out.reshape(-1)-cur_out.reshape(-1)).float().pow(2).mean().item()
         if ratio == 0: ori_loss = loss
         if loss < best_loss:
             best_loss = loss; best_scales = scales; best_r = ratio
-        break
     # print(f'Loss Reduce: {(ori_loss-best_loss)/ori_loss*100:.2f}%, best r: {best_r}')
+
     # Recover Original Linear
     for name in child_name2quant:
         set_op_by_name(layer, name, name2linears[name])
@@ -152,7 +145,6 @@ def smooth_scale(model, inputs):
         layer = decoderLayers[layer_idx].cuda()
         name2linears = get_name_linears(layer)
 
-        # 捕获每个线性层的输入激活
         activations = {}; handles = []
 
         def get_input_hook(module, input, output, linear_name, activations):

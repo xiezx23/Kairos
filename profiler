@@ -1,0 +1,122 @@
+
+\subsection{Performance Profiler}
+\label{subsec:profiler}
+
+Given a linear layer with weight $W_{INT4} \in \mathbb{N}^{N \times K}$ and an input activation $A_{FP16} \in \mathbb{R}^{M \times K}$, we design several  quantization strategies for computation, as depicted in Figure \ref{fig:compt_strategy}.
+\begin{itemize}
+\item $W_c4A_c16$ (W4A16 GEMV/GEMM):
+Since the weights in storage is 4-bit, $W_c4A_c16$ is the original strategy for computation.
+We can directly use $W_{INT4}$ in the W4A16 GEMV/GEMM kernel to calculate the result.
+The W4A16 kernel fuse dequantization and matrix multiplication (Matmul) into one kernel to reduce memory access overhead~\cite{AWQ, GPTQ, marlin, ladder}.
+The GEMV kernel only uses CUDA Core, while the GEMM kernel uses Tensor Core for matrix multiplication~\cite{}.
+Above works relied on an empirical threshold to switch between GEMV and GEMM kernels. 
+For instance, when M is less than 8, GEMV is used, otherwise GEMM is used.
+
+We demonstrate that giving an empirical threshold is inefficient.
+For a linear layer with a weight shape of (1024, 4096), GEMV outperforms GEMM when M < 19.
+For a shape of (4096, 14336), GEMM becomes faster when M > 5.
+Therefore, we separate GEMV and GEMM, and employ the profiler to determine the threshold for each linear layer.
+The $W_c4A_c16$ quantization strategy effectively reduces weight memory access and is suitable for the memory-bound prefill phase when M is small.
+
+\item $W_c8A_c8$ (W8A8 GEMM): 
+In order to use W8A8 GEMM, we need to convert the precision of weights by dequantize $W_{INT4}$ back to INT8 format.
+The $W_c8A_c8$ quantization strategy requires to perform online quantization to acitvations.
+This strategy leverages the hardware integer computation units (e.g., INT8 Tensor Core).
+Thus, it can obtain acceleration in the compute-bound prefill phase.
+Since $W_c8A_c8$ is used for larger M, it is unnecessary to consider W8A8 GEMV.
+The same applies to $W_c16A_c16$.
+
+\item $W_c16A_c16$ (FP16 GEMM): We dequantize $W_{INT4}$ back to 16-bit, and execute the FP16 GEMM kernel with the full precision activation $A_{FP16}$.
+Compared to the $W_c4A_c16$, this strategy executes dequantization and Matmul kernels separately.
+The $W_c16A_c16$ strategy has a shallower slope than $W_c14A_c16$, as shown in Figure~\ref{eq:latency}(c).
+Therefore, by Theorem~\ref{theorem}, this strategy is better than $W_c4A_c16$ when M is large enough.
+% \item Path 4(W4A8):
+\end{itemize}
+
+In order to select a better quantization strategy $W_cxA_cy$ at runtime, we design an offline performance profiler. 
+% The profiler aims to build a lookup table of the optimal computation path based on workload characteristics for a given hardware platform and linear layer.
+We design the profiler based on following two observations.
+
+\textbf{Observation 1: The input dimension $M$ is the key variable determining the workload characteristics.}
+In a linear layer, the dimensions K and N are fixed. 
+Therefore, the workload characteristic is determined by the first dimension M of the input tensor, which is the product of batch size and sequence length.
+
+In the decoding phase, the length of each input sequence is 1. Therefore, M is equal to the batch size.
+In the prefill phase, the sequence length is determined by user input and is dynamically  changing.
+Thus, we can simplify the optimal path selection problem to a function of the single variable M:
+\begin{equation}
+P(M) = argmin_{Path \in {0,1,2,3}} T_{Path}(M)
+\end{equation}
+where $T_{Path}(M)$ denotes the end-to-end execution latency for a given path at a specific M.
+
+\textbf{Observation 2: The shapes of linear layers in LLMs are few.}
+Modern LLMs typically employ a homogeneous, Transformer-based architecture. 
+This means that the shapes of linear layers (e.g., Q, K, V, O projections, and the two layers in the Feed-Forward Network) are determined by only a few configuration parameters (e.g., hidden dimension, number of attention heads, FFN intermediate expansion factor). 
+For example, Llama3 8B have only four weight shapes in all Transformer layers, and Llama3 70B is the same.
+
+This observation is critical because it means we only need to build and store the M-based lookup tables for a limited set of weight shapes to cover the entire model. 
+This design keeps the overhead of offline profiling and the runtime memory overhead of the lookup tables minimal, ensuring the practicality and efficiency of our framework.
+
+
+As shown in Figure \ref{fig:profiler}, based on the above observations, the workflow of profiler is as follows:
+
+\textbf{1) Shape Clustering and Initialization.}
+Firstly, analyze all linear layers in the target model architecture and cluster them based on the shape (N, K) of their weight tensors.
+For each unique shape, initialize an empty lookup table $L_{(N, K)}$.
+
+\textbf{2) Representative Workload Sampling.}
+For each unique shape, sample a representative range of M, (e.g., $M \in [1, 2, 4, 8, ..., M_{max}]$), where $M_{max}$ corresponds to the maximum expected product of batch size and sequence length during the prefill phase. 
+
+\textbf{3) Benchmarking and Performance Profiling.}
+For each sampled (M, K, N) triplet, the profiler performs benchmarking to obtain the average latencies:
+\begin{itemize}
+    \item Ensure that no other programs are running on the hardware during testing.
+    \item Prepare a random 4-bit weight tensor $W_{INT4}  \in \mathbb{N}^{N \times K}$ quantized by TSQ method and a random activation tensor $A_{FP16} \in \mathbb{R}^{M \times K}$.
+    \item Execute every computation paths separately.
+    \item Measure the average latency for each path to obtain stable values $T_{path}$.
+\end{itemize}
+
+\textbf{4) Lookup Table Construction.}
+For each sampled $M_i$, compare the measured latencies of all paths and record the optimal path $P(M_i)$ into the shape's lookup table $L_{shape}$.
+After the construction is completed, traverse $L_{shape}$ and merge adjacent identical options to obtain an interval lookup table.
+Finally, save the lookup table for runtime quantization strategy decision.
+
+
+
+\begin{algorithm}[t]
+    \caption{Quantization Strategy Selection}
+    \label{alg:selection}
+    \SetAlgoLined
+    \SetKwInput{Input}{Input}
+    \SetKwInput{Output}{Output}
+        \Input{
+        weight $W\in\mathbb{N}^{N \times K}$, activation,$A\in\mathbb{R}^{M\times K}$,
+        lookup table of quantization strategy $LD$, 
+        previous result dictionary $preRes$, previous M $preM$
+        }
+        \Output{quantization strategy for computation $quantSt$}
+        % \Output{temporary weight $W_{temp}$ and activation $A_{temp}$}
+        \BlankLine
+        weight shape $(N,K) \leftarrow W.shape$\;
+        input dimension $M \leftarrow A.shape[0]$\;
+        \eIf{$M == preM$}{
+            $quantSt\leftarrow preRes[(N,K)]$\;
+        } %Else
+        {
+            interval lookup table $L_{(N,K)} \leftarrow LD[(N,K)]$\;
+            % \tcp{$L_S$ is $Dict\{(start, end):path\}$, means best path in $[start, end)$ is $path$.}
+            $quantSt \leftarrow \textbf{binary\_search}(L_S, M)$\;
+            % $left \leftarrow 0$, $right \leftarrow |L_{(N,K)}|$\;
+            % \While{$left\ \textless \ right-1$}{
+            %     $mid \leftarrow \frac{left+right}{2}$\;
+            %     $M_{mid} \leftarrow L_{(N,K)}[mid].first$\;
+            %     \eIf{$M_{mid} \  \textgreater \ M$}{
+            %         $right \leftarrow mid$
+            %     }
+            %     % Else
+            %     {$left \leftarrow mid$} 
+            % }
+            % $quantSt \leftarrow L_{(N,K)}[left].second$\;
+            $preM \leftarrow M$;\ \ \  $preRes[{(N,K)}] \leftarrow quantSt$\;
+        }
+    \end{algorithm}

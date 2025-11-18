@@ -1,0 +1,39 @@
+\begin{table}[tbp]
+\caption{Performance Comparison of Different Kernels}
+\begin{center}
+% \begin{tabular}{|c|c|c|c|c|c|}
+\begin{tabular}{cccccc}
+\hline
+\textbf{Kernel}&\multicolumn{5}{c}{\textbf{Input Dimension M}} \\
+\cline{2-6} 
+\textbf{Latency(ms) $\downarrow$ } & \textbf{\textit{1}}& \textbf{\textit{1024}}& \textbf{\textit{2048}}& \textbf{\textit{4096}}& \textbf{\textit{8192}} \\
+\hline
+% FP16 GEMM& 0.012& 0.045&0.098& 0.176& 0.329  \\
+% \hline
+% DQ(W$_{4}$ $\rightarrow$ W$_{16}$) &\multicolumn{5}{|c|}{*}  \\
+% \hline
+W4A16 GEMM$^1$& \textbf{0.007}& 0.086&0.128& 0.223& 0.440  \\
+\hline
+W4A16 GEMM$^2$& 0.021& \textbf{0.051}&\textbf{0.109}& 0.231& 0.458  \\
+\hline
+DQ + FP16 GEMM& 0.029& 0.071&0.120& \textbf{0.199}& \textbf{0.349}  \\
+\hline
+% \multicolumn{6}{l}{We use W4A16 GEMM$^1$ from AWQ, W4A16 GEMM$^2$ from Marlin, FP16 GEMM from cuBLAS , and our own implemented CUDA Dequantization kernel.}
+\end{tabular}
+\begin{tablenotes}
+\footnotesize
+16-bit$\times$4-bit matmul with Llama3 8B K\_proj (N=1024, K=4096) on NVIDIA A100. We use W4A16 GEMM$^1$ from AWQ, W4A16 GEMM$^2$ from Marlin, FP16 GEMM from cuBLAS , and our own implemented dequantization kernel to convert weight from 4-bit to 16-bit.
+\end{tablenotes}
+\label{tab:perf_comp_fusion}
+\end{center}
+\end{table}
+
+We provide a option to dequantize weights separately here because using fusion kernel is not always better.
+For example, W4A16 GEMM kernel fuses dequantization kernels with the matrix multplication kernel to avoid writing dequantized weights into DRAM, but its performance is worse under some specific workloads.
+As shown in Table \ref{tab:perf_comp_fusion}, when M is small, the operator is memory-bound. 
+The fusion kernel achieves lower latency by reducing global memory accesses.
+However, when M is bigger than 4096, performing dequantization and GEMM separately is 12\% to 26\% faster than fusion W4A16 kernels.
+
+One of the mainly reasons is that fusion kernel concurrently performs both dequantization and matrix multiplication, which increases its demand for on-chip hardware resources such as registers and shared memory. 
+This increase in resource consumption directly constrain the number of threads that can be active simultaneously on a streaming multiprocessor (SM), leading to reduced thread-level parallelism and lower overall GPU utilization. 
+In contrast, separate kernels eliminate the impact of dequantization operations on GEMM, allowing for more efficient resource allocation and higher parallelism under high computational workloads.

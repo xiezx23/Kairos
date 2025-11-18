@@ -36,6 +36,7 @@ def eval(model, tokenizer):
     ppl = torch.exp(torch.stack(nlls).sum() / (nsamples * model.seqlen))
     
     print(f"Perplexity: {ppl.item()}")
+    return ppl.item()
 
 # # NOTE: no-used now
 # class Evaluator:

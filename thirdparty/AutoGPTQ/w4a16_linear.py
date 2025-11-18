@@ -42,8 +42,6 @@ def mul(A, B, C, s, workspace, thread_k=-1, thread_n=-1, sms=-1, max_par=16):
 
 
 # Precompute permutations for Marlin weight and scale shuffling
-
-
 def _get_perms():
     perm = []
     for i in range(32):
@@ -208,14 +206,12 @@ def unpack_4bit_to_32bit_signed(qweight, qzeros):
         device=qweight.device,
         requires_grad=False,
     )
-
     unpacked_zeros = torch.zeros(
         (qzeros.shape[0], qzeros.shape[1] * 8),
         dtype=torch.int8,
         device=qzeros.device,
         requires_grad=False,
     )
-
     for row in range(unpacked_weights.shape[0]):
         i = row % 8
         unpacked_weights[row, :] = (qweight[row // 8, :] >> (4 * i)) & 0xF
