@@ -8,7 +8,7 @@ from utils.color_print import *
 from utils.util import save_json, load_json
 from utils.perf_eval import timer
 from edq.quantization import *
-from edq.dynamic_linear import DynamicLinear, COMP_TYPE_NAME, shape_list
+from edq.dynamic_linear import DynamicLinear, COMP_TYPE_NAME
 
 torch.manual_seed(seed=10)
 print_flag = True
@@ -52,13 +52,10 @@ except(ImportError):
 
 class Profiler:
     @torch.no_grad
-    def __init__(self) -> None:
+    def __init__(self, shape_list) -> None:
         self.shape_list = shape_list
         self.seg_perf_list = []
         self.lut = {shape:LUT() for shape in self.shape_list}
-
-    def detect_linear_shape(self, model):
-        pass
 
     def record_best_comp(self, shape, r, comp_type):
         self.lut[shape].record(r, COMP_TYPE_NAME[comp_type])
@@ -88,7 +85,7 @@ def test_perf(proj_name, K, N, bias):
     # M = 1024 + 1
     torchLinear   = torch.nn.Linear(in_features=K, out_features=N, bias=bias, dtype=torch.float16).cuda()
     dlinear  = DynamicLinear.from_module(torchLinear, 'cuda')
-    input_len = [i for i in range(1, 65, 1)]
+    input_len = [i for i in range(1, 16, 1)] + [i for i in range(16, 2048, 32)] + [i for i in range(2048, 1024*16, 2048)] 
     # input_len = [128, 512, 1024, 2048, 4096, 1024*8, 1024*16]
     # input_len = [1024*8, 1024*16, 1024*32]
     # input_len = [1, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16*1024, 32*1024]
@@ -107,8 +104,8 @@ def test_perf(proj_name, K, N, bias):
     #     [i for i in range(D, E, 2024)]
 
     n = 100
-    DL_type_list =  ['Dlinear  FP16', 'Dlinear W4A16', 'Dlinear W4A16', 'Dlinear  W8A8', 'Dlinear W8A16', 'Dlinear W8A16']
-    comp_type_list = ['fp16', 'w4a16_gemm', 'w4a16_gemv', 'w8a8', 'w8a16_gemm', 'w8a16_gemv']
+    DL_type_list =  ['Dlinear  FP16', 'Dlinear W4A16', 'Dlinear W4A16', 'Dlinear  W8A8']
+    comp_type_list = ['fp16', 'w4a16_gemm', 'w4a16_gemv', 'w8a8']
 
     # Preheat Kernels
     preheat_time = 20
@@ -150,7 +147,7 @@ def test_perf(proj_name, K, N, bias):
         # Check new comp is at least 5% better than orig comp.
         # if best_t * 1.05 > orig_t:
         #     best_comp = orig_comp
-        perf_list.append((m, best_comp, (orig_t - best_comp)*100/orig_t))
+        perf_list.append((m, best_comp, (orig_t - best_t)*100/orig_t))
         if print_flag:
             # fastest_kid = numpy.argmin(recordList)
             # print(color_text('gre', 'BestKernel: '+kernel_name_list[fastest_kid]))

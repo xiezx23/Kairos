@@ -33,3 +33,8 @@ elif hasattr(torch, "npu") and torch.npu.is_available():
     device = 'npu'
 else:
     device = 'cpu'
+
+# 'W8A8Linear', 'W4A16Linear', 'W4A8Linear', 'DynamicLinear'
+quant_strategy = input('Please input the quantization strategy.\n')
+# quant_strategy = 'DynamicLinear'
+print(f'Using quantization strategy: {quant_strategy}')

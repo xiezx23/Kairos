@@ -27,7 +27,7 @@ def eval_perf(model, tokenizer, inputs, ttft_times=4, max_new_tokens=100):
         model.generate(
             **inputs,
             max_new_tokens=1,
-            pad_token_id=tokenizer.pad_token_id,
+            pad_token_id=tokenizer.eos_token_id,
             eos_token_id=tokenizer.eos_token_id,
         )
     first_token_time = time.perf_counter()
@@ -39,7 +39,7 @@ def eval_perf(model, tokenizer, inputs, ttft_times=4, max_new_tokens=100):
         outputs = model.generate(
             **inputs,
             max_new_tokens=max_new_tokens,
-            pad_token_id=tokenizer.pad_token_id,
+            pad_token_id=tokenizer.eos_token_id,
             eos_token_id=tokenizer.eos_token_id,
         )
     finish_time = time.perf_counter()

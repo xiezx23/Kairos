@@ -5,6 +5,8 @@ dist/
 .vscode/
 
 *.pt
+*.json
+*.svg
 *.log
 fusion_result.json
 *.so
