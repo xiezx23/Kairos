@@ -2,7 +2,7 @@
 import torch
 import numpy
 import matplotlib.pyplot as plt
-import edq_cuda_accel
+import kairos_cuda_accel
 import awq_backend
 import omniserve_backend
 from kairos.quantization import *
@@ -82,11 +82,11 @@ def test(K, N):
     # Create input matrices
     weight_tensor = torch.randn((N, K), dtype=torch.float16).cuda()
 
-    # Quantize weight tensor from edq
-    weight_int4_edq, config_int4_edq = quantize_tensor_int4(weight_tensor, group_size=group_size)
+    # Quantize weight tensor from kairos
+    weight_int4_kairos, config_int4_kairos = quantize_tensor_int4(weight_tensor, group_size=group_size)
     weight_int8, config_int8 = quantize_tensor_int8(weight_tensor)
     scale_w = config_int8['scale'].squeeze(-1)
-    bitblas_args = {'scale':config_int4_edq['scale'], 'zeros':config_int4_edq['zero_pt']}
+    bitblas_args = {'scale':config_int4_kairos['scale'], 'zeros':config_int4_kairos['zero_pt']}
     qweight, scales, scaled_zeros = quant_weight_awq(weight_tensor.clone(), group_size)
     awq_args = (qweight, scales, scaled_zeros, N, K, group_size)
     # Prepare Qserve W4A8
@@ -94,7 +94,7 @@ def test(K, N):
     qserve_args = (qserve_w4a8.qweight, qserve_w4a8.s2_zeros, qserve_w4a8.s2_scales, qserve_w4a8.s1_scales)
     # Prepare Bitblas W4A16
     # bitblas_w4a16 = bitblasMatmulW4A16(K, N, group_size)
-    # weight_int4_bitblas = bitblas_w4a16.transform_weight(weight_int4_edq)
+    # weight_int4_bitblas = bitblas_w4a16.transform_weight(weight_int4_kairos)
 
     # input_len = [i for i in range(1, 32, 1)]
     # input_len = [1024 * 2]
@@ -111,7 +111,7 @@ def test(K, N):
         for _ in range(preheat_time):
             input_int8 = torch.empty_like(input_tensor, dtype=torch.int8, device='cuda')
             scale_x = torch.empty(input_tensor.shape[0], device='cuda', dtype=torch.float16)
-            edq_cuda_accel.quant_fp16_to_int8(input_int8, input_tensor, scale_x)
+            kairos_cuda_accel.quant_fp16_to_int8(input_int8, input_tensor, scale_x)
             qse_output = torch.empty(input_tensor.shape[0], weight_tensor.shape[0], device='cuda', dtype=torch.float16)
             omniserve_backend.qgemm_w4a8_per_group.gemm_forward_cuda(
                 input_int8, *qserve_args, scale_x, qse_output
@@ -123,19 +123,19 @@ def test(K, N):
         for _ in range(preheat_time):
             input_int8 = torch.empty_like(input_tensor, dtype=torch.int8, device='cuda')
             scale_x = torch.empty(input_tensor.shape[0], device='cuda', dtype=torch.float16)
-            edq_cuda_accel.quant_fp16_to_int8(input_int8, input_tensor, scale_x)
+            kairos_cuda_accel.quant_fp16_to_int8(input_int8, input_tensor, scale_x)
             smq_output = torch.empty(input_tensor.shape[0], weight_tensor.shape[0], device='cuda', dtype=torch.float16)
             awq_backend.w8a8_gemm_forward_cuda(input_int8, weight_int8, scale_w, scale_x, smq_output)
         for _ in range(preheat_time):
             input_int8 = torch.empty_like(input_tensor, dtype=torch.int8, device='cuda')
             scale_x = torch.empty(input_tensor.shape[0], device='cuda', dtype=torch.float16)
-            edq_cuda_accel.quant_fp16_to_int8(input_int8, input_tensor, scale_x)
-            edq_output = torch.empty(input_tensor.shape[0], weight_tensor.shape[0], device='cuda', dtype=torch.float16)
-            edq_cuda_accel.w8a8_wsas_gemm_cuda(input_int8, weight_int8, scale_x, scale_w, edq_output)
+            kairos_cuda_accel.quant_fp16_to_int8(input_int8, input_tensor, scale_x)
+            kairos_output = torch.empty(input_tensor.shape[0], weight_tensor.shape[0], device='cuda', dtype=torch.float16)
+            kairos_cuda_accel.w8a8_wsas_gemm_cuda(input_int8, weight_int8, scale_x, scale_w, kairos_output)
 
     n = 100
     print_flag = True
-    kernel_name_list = ['Pytorch  FP16', 'Qserve   W4A8', 'BitBLAS W4A16', 'AWQ     W4A16', 'SmoothQ  W8A8', 'EDQ      W8A8']
+    kernel_name_list = ['Pytorch  FP16', 'Qserve   W4A8', 'BitBLAS W4A16', 'AWQ     W4A16', 'SmoothQ  W8A8', 'kairos      W8A8']
     recordList = [[] for _ in range(len(kernel_name_list))]
     for midx in range(len(input_len)):
         m = input_len[midx]
@@ -152,7 +152,7 @@ def test(K, N):
             for _ in range(n):
                 input_int8 = torch.empty_like(input_tensor, dtype=torch.int8, device='cuda')
                 scale_x = torch.empty(input_tensor.shape[0], device='cuda', dtype=torch.float16)
-                edq_cuda_accel.quant_fp16_to_int8(input_int8, input_tensor, scale_x)
+                kairos_cuda_accel.quant_fp16_to_int8(input_int8, input_tensor, scale_x)
                 qse_output = torch.empty(input_tensor.shape[0], weight_tensor.shape[0], device='cuda', dtype=torch.float16)
                 omniserve_backend.qgemm_w4a8_per_group.gemm_forward_cuda(
                     input_int8, *qserve_args, scale_x, qse_output
@@ -174,19 +174,19 @@ def test(K, N):
             for _ in range(n):
                 input_int8 = torch.empty_like(input_tensor, dtype=torch.int8, device='cuda')
                 scale_x = torch.empty(input_tensor.shape[0], device='cuda', dtype=torch.float16)
-                edq_cuda_accel.quant_fp16_to_int8(input_int8, input_tensor, scale_x)
+                kairos_cuda_accel.quant_fp16_to_int8(input_int8, input_tensor, scale_x)
                 smq_output = torch.empty(input_tensor.shape[0], weight_tensor.shape[0], device='cuda', dtype=torch.float16)
                 awq_backend.w8a8_gemm_forward_cuda(input_int8, weight_int8, scale_w, scale_x, smq_output)
         check_output(ref_output, smq_output)
 
-        with timer('EDQ      W8A8', n = n, recordList=recordList[5], print_flag=print_flag):
+        with timer('kairos      W8A8', n = n, recordList=recordList[5], print_flag=print_flag):
             for _ in range(n):
                 input_int8 = torch.empty_like(input_tensor, dtype=torch.int8, device='cuda')
                 scale_x = torch.empty(input_tensor.shape[0], device='cuda', dtype=torch.float16)
-                edq_cuda_accel.quant_fp16_to_int8(input_int8, input_tensor, scale_x)
-                edq_output = torch.empty(input_tensor.shape[0], weight_tensor.shape[0], device='cuda', dtype=torch.float16)
-                edq_cuda_accel.w8a8_wsas_gemm_cuda(input_int8, weight_int8, scale_x, scale_w, edq_output)
-        check_output(ref_output, edq_output)
+                kairos_cuda_accel.quant_fp16_to_int8(input_int8, input_tensor, scale_x)
+                kairos_output = torch.empty(input_tensor.shape[0], weight_tensor.shape[0], device='cuda', dtype=torch.float16)
+                kairos_cuda_accel.w8a8_wsas_gemm_cuda(input_int8, weight_int8, scale_x, scale_w, kairos_output)
+        check_output(ref_output, kairos_output)
 
         if print_flag:
             # fastest_kid = numpy.argmin(recordList)

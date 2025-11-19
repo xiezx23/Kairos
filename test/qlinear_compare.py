@@ -3,7 +3,7 @@
 import torch
 import numpy
 import matplotlib.pyplot as plt
-import edq_cuda_accel
+import kairos_cuda_accel
 import awq_backend
 import omniserve_backend
 from kairos.quantization import *
@@ -37,9 +37,9 @@ def test(K, N, bias):
     torchLinear   = torch.nn.Linear(in_features=K, out_features=N, bias=bias, dtype=torch.float16).cuda()
     qlinear_w4a8  = W4A8Linear.from_module(torchLinear, 'cuda')
     qlinear_w4a16_awq = W4A16Linear_AWQ.from_module(torchLinear, 'cuda')
-    qlinear_w4a16_edq = W4A16Linear.from_module(torchLinear, 'cuda')
+    qlinear_w4a16_kairos = W4A16Linear.from_module(torchLinear, 'cuda')
     qlinear_w8a8_awq  = W8A8Linear.from_module(torchLinear, 'cuda', backend='awq')
-    qlinear_w8a8_edq  = W8A8Linear.from_module(torchLinear, 'cuda', backend='edq')
+    qlinear_w8a8_kairos  = W8A8Linear.from_module(torchLinear, 'cuda', backend='kairos')
     dlinear  = DynamicLinear.from_module(torchLinear, 'cuda')
     # input_len = [i for i in range(1, 32, 1)]
     # input_len = [128, 512, 1024, 2048, 4096, 1024*8, 1024*16]
@@ -49,8 +49,8 @@ def test(K, N, bias):
 
     n = 20
     print_flag = True
-    linear_list = [torchLinear, qlinear_w4a8, qlinear_w4a16_awq, qlinear_w4a16_edq, qlinear_w8a8_awq, qlinear_w8a8_edq]
-    kernel_name_list = ['Pytorch  FP16','Qserve   W4A8', 'AWQ     W4A16', 'EDQ     W4A16', 'SmoothQ  W8A8', 'EDQ      W8A8']
+    linear_list = [torchLinear, qlinear_w4a8, qlinear_w4a16_awq, qlinear_w4a16_kairos, qlinear_w8a8_awq, qlinear_w8a8_kairos]
+    kernel_name_list = ['Pytorch  FP16','Qserve   W4A8', 'AWQ     W4A16', 'kairos     W4A16', 'SmoothQ  W8A8', 'kairos      W8A8']
 
     DL_type_list =  ['Dlinear  FP16', 'Dlinear W4A16', 'Dlinear  W8A8', 'Dlinear W8A16', 'Dlinear W8A16']
     comp_type_list = ['fp16', 'w4a16', 'w8a8', 'w8a16_gemm', 'w8a16_gemv']
@@ -153,12 +153,12 @@ if __name__ == '__main__':
     #     print(f'M: {M} K: {K} N: {N} Bias:{bias}')
     #     n = 5
     #     print_flag = True
-    #     linear_list = [torchLinear, qlinear_w4a8, qlinear_w4a16_awq, qlinear_w4a16_edq, qlinear_w8a8_awq, qlinear_w8a8_edq]
-    #     kernel_name_list = ['Pytorch  FP16','Qserve   W4A8', 'AWQ     W4A16', 'EDQ     W4A16', 'SmoothQ  W8A8', 'EDQ      W8A8']
+    #     linear_list = [torchLinear, qlinear_w4a8, qlinear_w4a16_awq, qlinear_w4a16_kairos, qlinear_w8a8_awq, qlinear_w8a8_kairos]
+    #     kernel_name_list = ['Pytorch  FP16','Qserve   W4A8', 'AWQ     W4A16', 'kairos     W4A16', 'SmoothQ  W8A8', 'kairos      W8A8']
     #     input_tensor = torch.randn((M, K), dtype=torch.float16, device = 'cuda')
-    #     ref_out = qlinear_w4a16_edq(input_tensor)
+    #     ref_out = qlinear_w4a16_kairos(input_tensor)
     #     for _ in range(200):
-    #         out = qlinear_w4a16_edq(input_tensor)
+    #         out = qlinear_w4a16_kairos(input_tensor)
     #         torch.cuda.synchronize()
     #         if (ref_out-out).abs().sum() > 0:
     #             print((ref_out-out).abs().sum())
@@ -169,12 +169,12 @@ if __name__ == '__main__':
     #                     if diff[i][j] != 0:
     #                         print(f'1 diff[{i}][{j}]={diff[i][j]}')
     #                         # return
-    #     torch.save(qlinear_w4a16_edq.cpu().state_dict(),  'marlin.pt')
+    #     torch.save(qlinear_w4a16_kairos.cpu().state_dict(),  'marlin.pt')
     #     state_dict = torch.load('marlin.pt', map_location='cuda')
-    #     qlinear_w4a16_edq.load_state_dict(state_dict)
-    #     qlinear_w4a16_edq.to('cuda')
+    #     qlinear_w4a16_kairos.load_state_dict(state_dict)
+    #     qlinear_w4a16_kairos.to('cuda')
     #     for _ in range(200):
-    #         out = qlinear_w4a16_edq(input_tensor)
+    #         out = qlinear_w4a16_kairos(input_tensor)
     #         torch.cuda.synchronize()
     #         if (ref_out-out).abs().sum() > 0:
     #             print((ref_out-out).abs().sum())

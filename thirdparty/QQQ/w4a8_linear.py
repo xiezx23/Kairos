@@ -20,7 +20,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from QQQ._CUDA import qqq_gemm
-import edq_cuda_accel
+import kairos_cuda_accel
 from kairos.quantization import *
 
 
@@ -285,7 +285,7 @@ class W4A8Linear_QQQ(nn.Module):
         quant_A = torch.empty_like(A, device='cuda', dtype=torch.int8)
         D = torch.empty((A.shape[0], self.outfeatures), device='cuda', dtype=torch.float16)
         s1 = torch.empty(A.shape[0], device='cuda', dtype=torch.float16)
-        edq_cuda_accel.quant_fp16_to_int8(quant_A, A, s1)
+        kairos_cuda_accel.quant_fp16_to_int8(quant_A, A, s1)
         mul(
             quant_A,
             self.B,

@@ -423,7 +423,7 @@ struct BwdRunner {
   using StrideLSE = Stride<_1, Stride<Stride<int, int>, int>>;    // Q      ((H_R, H_K), B)
 
   // Backwards specific
-  using StrideDQ = StrideQ;
+  using Stridkairos = StrideQ;
   using StrideDK = StrideK;
   using StrideDV = StrideV;
   using StrideDO = StrideO;
@@ -439,7 +439,7 @@ struct BwdRunner {
   StrideO stride_O;
   StrideLSE stride_LSE;
 
-  StrideDQ stride_dQ;
+  Stridkairos stride_dQ;
   StrideDK stride_dK;
   StrideDV stride_dV;
   StrideDO stride_dO;

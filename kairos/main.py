@@ -16,8 +16,8 @@ from eval.perf_wiki2 import eval_perf
 
 # Check Device
 if device != 'cuda':
-    print(color_text('red', 'We only support running edq.main on NVIDIA device.'))
-    print(color_text('red', 'Use edq.ascend_run for Ascend310P.')); exit(0)
+    print(color_text('red', 'We only support running kairos.main on NVIDIA device.'))
+    print(color_text('red', 'Use kairos.ascend_run for Ascend310P.')); exit(0)
 cuda_device_count = torch.cuda.device_count()
 cuda_device_name  = torch.cuda.get_device_name(0)
 if cuda_device_count != 1:

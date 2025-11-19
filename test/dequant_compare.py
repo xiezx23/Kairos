@@ -1,7 +1,7 @@
 import torch
 import numpy
 import matplotlib.pyplot as plt
-import edq_cuda_accel
+import kairos_cuda_accel
 import awq_backend
 import omniserve_backend
 from kairos.quantization import *
@@ -11,7 +11,7 @@ from thirdparty.AWQ.awq_method import quant_weight_awq, calculate_zeros_width, p
 from thirdparty.Qserve.w4a8_linear import W4A8Linear
 from thirdparty.AutoGPTQ.w4a16_linear import W4A16Linear_Marlin
 from thirdparty.QQQ.w4a8_linear import W4A8Linear_QQQ
-from kairos.dynamic_linear import edq_quantize_tensor_int4
+from kairos.dynamic_linear import kairos_quantize_tensor_int4
 
 sub_stream = torch.cuda.Stream(device='cuda:0')
 sub_stream_ptr = sub_stream.cuda_stream
@@ -43,7 +43,7 @@ def test(K, N):
     weight_tensor = torch.randn((N, K), dtype=torch.float16).cuda()
     weight_i8, q_config1 = quantize_tensor_int8(weight_tensor, max_int=120)
     scale_1 = q_config1['scale']
-    weight_i4, q_config2 = edq_quantize_tensor_int4(weight_i8, group_size=group_size)
+    weight_i4, q_config2 = kairos_quantize_tensor_int4(weight_i8, group_size=group_size)
     scale_2_f = q_config2['scale_f']
     scale_2_i = q_config2['scale_i']
     zero_2_f = q_config2['zero_pt_f']
@@ -54,7 +54,7 @@ def test(K, N):
 
     # TEST DEQUANT KERNEL
     w_i8 = torch.empty_like(weight_tensor, dtype=torch.int8, device='cuda')
-    edq_cuda_accel.dequant_int4_to_int8(w_i8, weight_int4, scale_2_i, zero_2_i, group_size)
+    kairos_cuda_accel.dequant_int4_to_int8(w_i8, weight_int4, scale_2_i, zero_2_i, group_size)
 
     w_8  = dequant_int4_to_int8(weight_int4, scale_2_i,
                                 zero_2_i, group_size)
@@ -63,7 +63,7 @@ def test(K, N):
     ########## DIRECT PACKED FORMAT ###############
     ref_w_16 = dequant_int4_to_fp16(weight_int4, scale_1, scale_2_f, zero_2_f, group_size)
     w_f16 = torch.empty_like(weight_tensor, dtype=torch.float16, device='cuda')
-    edq_cuda_accel.dequant_int4_to_fp16(w_f16, weight_int4, scale_f, zero_2_f, group_size)
+    kairos_cuda_accel.dequant_int4_to_fp16(w_f16, weight_int4, scale_f, zero_2_f, group_size)
     assert (ref_w_16-w_f16).abs().max() < 0.01, print((ref_w_16-w_f16).abs())
     # print(ref_w_16)
 
@@ -73,7 +73,7 @@ def test(K, N):
     q_z = (-zero_2_f.reshape(scale_f.shape)*scale_f).T.contiguous()
     ref_dqw = dequantize_tensor_awq(weight_i4, scale_f, zero_2_f)
     dqw_f16 = torch.empty_like(weight_tensor, dtype=torch.float16, device='cuda')
-    edq_cuda_accel.dequant_interleaved_int4_to_fp16(dqw_f16, weight_int4_awq, q_s, q_z, 128)
+    kairos_cuda_accel.dequant_interleaved_int4_to_fp16(dqw_f16, weight_int4_awq, q_s, q_z, 128)
     assert (ref_dqw-dqw_f16).abs().max() < 0.01, print((ref_dqw-dqw_f16).abs().max())
     
     ########## AWQ LAYOUT FORMAT ###############
@@ -82,14 +82,14 @@ def test(K, N):
     q_z_8 = (-zero_2_f*scale_2_f).reshape(scale_f.shape).T.contiguous()
     ref_i8 = dequantize_tensor_awq(weight_i4, scale_2_f, zero_2_f).to(torch.int8)
     dqw_i8 = torch.empty_like(weight_tensor, dtype=torch.int8, device='cuda')
-    edq_cuda_accel.dequant_interleaved_int4_to_int8(dqw_i8, weight_int4_awq, q_s_8, q_z_8, 128)
+    kairos_cuda_accel.dequant_interleaved_int4_to_int8(dqw_i8, weight_int4_awq, q_s_8, q_z_8, 128)
     # assert (ref_i8-weight_i8).abs().max() < 0.01, print((ref_i8-weight_i8).abs().max())
     assert (ref_i8-dqw_i8).abs().max() <= 1, print((ref_i8-dqw_i8).abs().max())
     
     w_i8_cpu = torch.empty_like(weight_tensor, dtype=torch.int8, device='cuda')
-    edq_cuda_accel.dequant_int4_to_int8(w_i8, weight_int4, scale_2_i, zero_2_i, group_size)
+    kairos_cuda_accel.dequant_int4_to_int8(w_i8, weight_int4, scale_2_i, zero_2_i, group_size)
     w_f16_cpu = torch.empty_like(weight_tensor, dtype=torch.float16, device='cuda')
-    edq_cuda_accel.dequant_int4_to_fp16(w_f16, weight_int4, scale_f, zero_2_f, group_size)
+    kairos_cuda_accel.dequant_int4_to_fp16(w_f16, weight_int4, scale_f, zero_2_f, group_size)
     w_i4_cpu = weight_int4.cpu()
     w_i8_cpu = w_i8_cpu.cpu()
     w_f16_cpu = w_f16_cpu.cpu()
@@ -101,7 +101,7 @@ def test(K, N):
     w4a16_w = w4a16_marlin.B.cuda()
     w4a8__w = w4a8__marlin.B.cuda()
     tl_w = torch.empty(w4a16_w.shape, dtype=torch.int32, device='cuda')
-    edq_cuda_accel.trans_layout_c16_to_c8(tl_w, w4a16_w)
+    kairos_cuda_accel.trans_layout_c16_to_c8(tl_w, w4a16_w)
     assert (tl_w - w4a8__w).abs().max() == 0, print((tl_w - w4a8__w).abs().max())
 
     preheat_time = 20
@@ -113,22 +113,22 @@ def test(K, N):
                                     zero_2_f, group_size)
         
         w_i8 = torch.empty_like(weight_tensor, dtype=torch.int8, device='cuda')
-        edq_cuda_accel.dequant_int4_to_int8(w_i8, weight_int4, scale_2_i, zero_2_i, group_size)
-        # edq_cuda_accel.dequant_int4_to_int8_stream(w_i8, weight_int4, 
+        kairos_cuda_accel.dequant_int4_to_int8(w_i8, weight_int4, scale_2_i, zero_2_i, group_size)
+        # kairos_cuda_accel.dequant_int4_to_int8_stream(w_i8, weight_int4, 
         #                                     scale_2_i, zero_2_i, group_size, cur_stream_ptr)
 
         w_f16 = torch.empty_like(weight_tensor, dtype=torch.float16, device='cuda')
-        edq_cuda_accel.dequant_int4_to_fp16(w_f16, weight_int4, scale_f, zero_2_f, group_size)
-        # edq_cuda_accel.dequant_int4_to_fp16_stream(w_f16, weight_int4, 
+        kairos_cuda_accel.dequant_int4_to_fp16(w_f16, weight_int4, scale_f, zero_2_f, group_size)
+        # kairos_cuda_accel.dequant_int4_to_fp16_stream(w_f16, weight_int4, 
         #                                     scale_f, zero_2_f, group_size, cur_stream_ptr)
 
         dqw_f16 = torch.empty_like(weight_tensor, dtype=torch.float16, device='cuda')
-        edq_cuda_accel.dequant_interleaved_int4_to_fp16(dqw_f16, weight_int4_awq, q_s, q_z, 128)
+        kairos_cuda_accel.dequant_interleaved_int4_to_fp16(dqw_f16, weight_int4_awq, q_s, q_z, 128)
 
-        edq_cuda_accel.dequant_int4_to_fp16(w_f16, weight_int4, scale_f, zero_2_f, group_size)
+        kairos_cuda_accel.dequant_int4_to_fp16(w_f16, weight_int4, scale_f, zero_2_f, group_size)
 
         tl_w = torch.empty(w4a16_w.shape, dtype=torch.int32, device='cuda')
-        edq_cuda_accel.trans_layout_c16_to_c8(tl_w, w4a16_w)
+        kairos_cuda_accel.trans_layout_c16_to_c8(tl_w, w4a16_w)
         # w_i4 = w_i4_cpu.to('cuda')
         # w_i8 = w_i8_cpu.to('cuda')
         # w_f16 = w_f16_cpu.to('cuda')
@@ -145,14 +145,14 @@ def test(K, N):
     desc = str_format('cuda', 'DRPACK', '4->8')
     with timer(desc, n=n):
         for _ in range(n):
-            edq_cuda_accel.dequant_int4_to_int8(w_i8, weight_int4, scale_2_i, zero_2_i, group_size)
+            kairos_cuda_accel.dequant_int4_to_int8(w_i8, weight_int4, scale_2_i, zero_2_i, group_size)
 
     torch.cuda.empty_cache()
     dqw_f16 = torch.empty_like(weight_tensor, dtype=torch.float16, device='cuda')
     desc = str_format('cuda', 'AWQ', '4->8')
     with timer(desc, n=n):
         for _ in range(n):
-            edq_cuda_accel.dequant_interleaved_int4_to_int8(dqw_i8, weight_int4_awq, q_s_8, q_z_8, 128)
+            kairos_cuda_accel.dequant_interleaved_int4_to_int8(dqw_i8, weight_int4_awq, q_s_8, q_z_8, 128)
 
     torch.cuda.empty_cache()
     desc = str_format('torch', 'DRPACK', '4->16')
@@ -166,14 +166,14 @@ def test(K, N):
     desc = str_format('cuda', 'DRPACK', '4->16')
     with timer(desc, n=n):
         for _ in range(n):
-            edq_cuda_accel.dequant_int4_to_fp16(w_f16, weight_int4, scale_f, zero_2_f, group_size)
+            kairos_cuda_accel.dequant_int4_to_fp16(w_f16, weight_int4, scale_f, zero_2_f, group_size)
 
     torch.cuda.empty_cache()
     dqw_f16 = torch.empty_like(weight_tensor, dtype=torch.float16, device='cuda')
     desc = str_format('cuda', 'AWQ', '4->16')
     with timer(desc, n=n):
         for _ in range(n):
-            edq_cuda_accel.dequant_interleaved_int4_to_fp16(dqw_f16, weight_int4_awq, q_s, q_z, 128)
+            kairos_cuda_accel.dequant_interleaved_int4_to_fp16(dqw_f16, weight_int4_awq, q_s, q_z, 128)
     
     torch.cuda.empty_cache()
     dqw_f16 = torch.empty_like(weight_tensor, dtype=torch.float16, device='cuda')
@@ -181,7 +181,7 @@ def test(K, N):
     with timer(desc, n=n):
         for _ in range(n):
             # tl_w = torch.empty(w4a16_w.shape, dtype=torch.int32, device='cuda')
-            edq_cuda_accel.trans_layout_c16_to_c8(tl_w, w4a16_w)
+            kairos_cuda_accel.trans_layout_c16_to_c8(tl_w, w4a16_w)
     # torch.cuda.empty_cache()
     # with timer('CPU->GPU get4   ', n=n):
     #     for _ in range(n):

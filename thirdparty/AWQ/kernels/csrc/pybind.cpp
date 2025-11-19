@@ -13,7 +13,7 @@
 #include "w8a8/layernorm.h"
 #include "w8a8/act.h"
 
-#include "dequant_edq/deq_i4_to_f16.h"
+#include "dequant_kairos/deq_i4_to_f16.h"
 
 
 

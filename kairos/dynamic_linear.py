@@ -1,17 +1,17 @@
 import torch
-import edq_cuda_accel
+import kairos_cuda_accel
 import awq_backend
 import torch.cuda.nvtx as nvtx
 from utils.color_print import *
 from utils.perf_eval import timer
-from kairos.quantization import (quantize_tensor_int8, pack_int4_data, dequantize_tensor_int4, real_quantize_tensor_edq)
+from kairos.quantization import (quantize_tensor_int8, pack_int4_data, dequantize_tensor_int4, real_quantize_tensor_kairos)
 from thirdparty.AWQ.awq_method import pack_int_awq, trans_qfactor_layout_awq, dequantize_tensor_awq, quant_weight_awq
 
 COMP_TYPE_NAME = {'w4a16_gemm':0, 'w4a16_gemv':1, 'w8a8':2, 'w8a16_gemm':3, 'w8a16_gemv':4, 'fp16':5, 'w4a16':6}
 
 @torch.compile()
 @torch.no_grad()
-def edq_quantize_tensor_int4(x, group_size = -1):
+def kairos_quantize_tensor_int4(x, group_size = -1):
     x_shape = x.shape    
     if group_size < 0:
         x = x.reshape(-1, x_shape[-1])
@@ -99,17 +99,17 @@ class DynamicLinear(torch.nn.Module):
         scale_1 = q_config1['scale']
         q_linear.scales_1 = scale_1.view(-1)
         """ Step2: Quantize weight from int8 to uint4.  """
-        # weight_i4, scale_2_f, zero_2_f = real_quantize_tensor_edq(weight_i8.clone())
-        weight_i4, q_config2 = edq_quantize_tensor_int4(weight_i8, group_size=128)
+        # weight_i4, scale_2_f, zero_2_f = real_quantize_tensor_kairos(weight_i8.clone())
+        weight_i4, q_config2 = kairos_quantize_tensor_int4(weight_i8, group_size=128)
         scale_2_f = q_config2['scale_f']
         zero_2_f = q_config2['zero_pt_f']
         q_linear.scales_to8, q_linear.scaled_zeros_to8 = trans_qfactor_layout_awq(
-            scale_2_f.reshape(N,-1), zero_2_f.reshape(N,-1), 128, method='EDQ')
+            scale_2_f.reshape(N,-1), zero_2_f.reshape(N,-1), 128, method='kairos')
         """ Step3: Calculate the dequantization factor for uint4 to fp16. """
         scale_f = scale_2_f.view(scale_1.shape[0], -1) * scale_1
         q_linear.qweight = pack_int_awq(weight_i4.clone())
         q_linear.scales, q_linear.scaled_zeros = trans_qfactor_layout_awq(
-            scale_f.reshape(N,-1), zero_2_f.reshape(N,-1), 128, method='EDQ')
+            scale_f.reshape(N,-1), zero_2_f.reshape(N,-1), 128, method='kairos')
         
         if linear.bias is not None:
             q_linear.bias = linear.bias.clone().half()
@@ -141,19 +141,19 @@ class DynamicLinear(torch.nn.Module):
         # w8a8 kernel
         elif comp_type == COMP_TYPE_NAME['w8a8']:
             tmp_weight = torch.empty(self.shape, dtype=torch.int8, device='cuda')
-            edq_cuda_accel.dequant_interleaved_int4_to_int8(tmp_weight, self.qweight, 
+            kairos_cuda_accel.dequant_interleaved_int4_to_int8(tmp_weight, self.qweight, 
                                         self.scales_to8, self.scaled_zeros_to8, 128)
             intput_shape = input.shape
             input = input.view(-1, intput_shape[-1])
             int_x = torch.empty_like(input, device='cuda', dtype=torch.int8)
             scale_x = torch.empty(input.shape[0], device='cuda', dtype=torch.float16)
-            edq_cuda_accel.quant_fp16_to_int8(int_x, input, scale_x)
+            kairos_cuda_accel.quant_fp16_to_int8(int_x, input, scale_x)
             out = torch.empty((input.shape[0], self.shape[0]), device='cuda', dtype=torch.float16)
             awq_backend.w8a8_gemm_forward_cuda(int_x, tmp_weight, self.scales_1, scale_x, out)
         # full precision kernel
         elif comp_type == COMP_TYPE_NAME['fp16']:
             tmp_weight = torch.empty(self.shape, dtype=torch.float16, device='cuda')
-            edq_cuda_accel.dequant_interleaved_int4_to_fp16(tmp_weight, self.qweight, 
+            kairos_cuda_accel.dequant_interleaved_int4_to_fp16(tmp_weight, self.qweight, 
                                         self.scales, self.scaled_zeros, 128)
             out = input @ tmp_weight.T
         # else: assert 0, print(f"Unkown comp_type_id: {comp_type}")

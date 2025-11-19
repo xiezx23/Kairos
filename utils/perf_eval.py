@@ -6,21 +6,12 @@ import torch
 from contextlib import contextmanager
 from utils.calibration import generate_random_token_sequence
 from utils.color_print import *
-from kairos.kv_cache import CacheManager, QuantCacheManager
-
 if torch.cuda.is_available():
     device = 'cuda'
     synchronize = torch.cuda.synchronize
     max_memory_allocated = torch.cuda.max_memory_allocated
     empty_cache = torch.cuda.empty_cache
     reset_peak_memory_stats = torch.cuda.reset_peak_memory_stats
-elif torch.npu.is_available():
-    import torch_npu
-    device = 'npu:0'
-    synchronize = torch.npu.synchronize
-    max_memory_allocated = torch.npu.max_memory_allocated
-    empty_cache = torch.npu.empty_cache
-    reset_peak_memory_stats = torch.npu.reset_peak_memory_stats
 else:
     device = 'cpu'
 
@@ -101,8 +92,6 @@ class InferModel():
         print(gre_prefix+"---------INPUT PROMPT---------"+default_color)
         print(prompt)
         print(gre_prefix+"---------MODEL OUTPUT---------"+default_color)
-        # past_key_values = CacheManager()
-        # past_key_values = QuantCacheManager()
         self.streamer.reset()
         empty_cache()
         gc.collect()
@@ -114,7 +103,6 @@ class InferModel():
                 max_new_tokens=max_new_tokens,
                 streamer=self.streamer,
                 pad_token_id = self.pad_token_id,
-                # , past_key_values=past_key_values
                 repetition_penalty=1.2,
                 no_repeat_ngram_size=3,
             )

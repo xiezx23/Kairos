@@ -3,7 +3,7 @@ import time
 
 
 @torch.no_grad()
-def real_quantize_tensor_edq(
+def real_quantize_tensor_kairos(
     w, n_bit=4, q_group_size=128):
     org_w_shape = w.shape
     if q_group_size > 0:
@@ -28,7 +28,7 @@ def real_quantize_tensor_edq(
     return w, scales.view(w.shape[0], -1), zeros.view(w.shape[0], -1)
 
 @torch.no_grad()
-def dequantize_tensor_edq(weight, scales, scaled_zeros, group_size=128):
+def dequantize_tensor_kairos(weight, scales, scaled_zeros, group_size=128):
     weight_shape = weight.shape
     # assert weight_shape[-1] % group_size == 0
     weight = weight.reshape(-1, group_size) 

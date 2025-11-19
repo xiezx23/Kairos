@@ -27,7 +27,7 @@ class W8A8Linear(torch.nn.Module):
             self.bias = None
     
     @classmethod
-    def from_module(cls, linear, device, return_dtype = torch.float16, init_only=False, backend='edq', name = ''):
+    def from_module(cls, linear, device, return_dtype = torch.float16, init_only=False, backend='kairos', name = ''):
         q_linear = cls(
             linear.in_features, linear.out_features, 
             linear.bias is not None, device)

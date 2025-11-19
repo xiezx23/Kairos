@@ -20,18 +20,6 @@ if torch.cuda.is_available():
 
 kernel_name_list = ['Pytorch   FP16','Qserve    W4A8','QQQ       W4A8', 'AWQ      W4A16', 'Marlin   W4A16', 'SmoothQ   W8A8', 'Dynamic Linear']
 
-# input_len = [i for i in range(1, 32, 1)]
-# input_len = [128, 512, 1024, 2048, 4096, 1024*8, 1024*16]
-# input_len = [1024*8, 1024*16, 1024*32]
-# input_len = [1, 2, 3, 4, 5, 6, 7, 8]
-# input_len = [1, 64, 128, 256, 512, 1024, 2048, 4096, 8192]
-# input_len = [1, 8, 16, 32, 48, 68, 96, 128, 160, 192, 224, 256] # Figure Analysis(a)
-# input_len = [1, 2048, 4096, 8192, 16*1024, 32*1024, 64*1024, 96*1024]
-# input_len = [1] + [i*1024 for i in range(1, 7)]
-# input_len = [i for i in range(1, 1024*64+2, 1024*8)]
-# input_len = [i for i in range(1, 1024*3, 256)]
-# input_len = [i for i in range(1, 120, 11)]
-
 input_len = [1, 4, 8, 1024*16, 1024*32, 1024*64]
 input_len_s = ['1', '4', '8', '16k', '32k', '64k']
 
@@ -47,7 +35,6 @@ elif model_type == 'llama':
     shape_list = [(1024, 4096), (4096, 4096), (4096, 14336), (14336, 4096)] # Llama-3 8B
 else: assert 0, print('Unknown model:', model_type)
 
-# save_path = 'tmp.pt'
 
 DynamicLinear.prof = Profiler(shape_list)
 # DynamicLinear.prof.profiling()
@@ -114,41 +101,8 @@ def test(proj_name, K, N, bias):
         record[i].append(recordList[i])
     return
 
-    plt.figure()
-    # =============    ===============================
-    # character        color
-    # =============    ===============================
-    # ``'b'``          blue
-    # ``'g'``          green
-    # ``'r'``          red
-    # ``'c'``          cyan
-    # ``'m'``          magenta
-    # ``'y'``          yellow
-    # ``'k'``          black
-    # ``'w'``          white
-    # =============    ===============================
-    plt.title(f'{proj_name}(N:{N} K:{K} Bias:{bias})')
-    plt.xlabel('m')
-    if 0:
-        plt.ylabel('Accelerate Ratio')
-        for i in range(len(recordList[0])):
-            recordList[1][i] = recordList[0][i] / recordList[1][i]
-            recordList[2][i] = recordList[0][i] / recordList[2][i]
-            recordList[3][i] = recordList[0][i] / recordList[3][i]
-            recordList[4][i] = recordList[0][i] / recordList[4][i]
-            recordList[0][i] = 1
-    else: plt.ylabel('latency')
-    # plt.xticks(input_len)
-    plt.grid(True)
-    plt.plot(input_len, recordList[0], color = 'y', label = 'FP16')
-    plt.plot(input_len, recordList[1], color = 'c', label = 'W4A8')
-    plt.plot(input_len, recordList[2], color = 'g', label = 'W4A16')
-    plt.plot(input_len, recordList[3], color = 'k', label = 'W8A8')
-    plt.plot(input_len, recordList[4], color = 'r', label = 'Dynamic')
-    plt.legend()
-
 if __name__ == '__main__':
-    if 0:
+    if 1:
         w_shape_proj = ['k_proj, v_proj', 'q_proj',
                     'o_proj', 'gate_proj, up_proj', 'down_proj']
         bias_list = [True, True, False, False, False]
@@ -256,24 +210,9 @@ if __name__ == '__main__':
         plt.show()
         exit(0)
 
-    # input_len = input_len[4:-1]
-    # for i in range(len(sum_lat_list)):
-    #     sum_lat_list[i] = sum_lat_list[i][4:-1]
     categories = input_len
     width = 0.12
     x = np.arange(len(categories))
-
-    # plt.bar(x-width*3,   sum_lat_list[5], width=width, color = '#B6B4A7',edgecolor='k', label = 'W8A8 by SmoothQuant')
-    # plt.bar(x-width*2,   sum_lat_list[3], width=width, color = '#4291F2',edgecolor='k', label = 'W4A16 by AWQ')
-    # plt.bar(x-width,     sum_lat_list[4], width=width, color = '#6baed6',edgecolor='k', label = 'W4A16 by Marlin')
-    # plt.bar(x,           sum_lat_list[1], width=width, color = 'c',edgecolor='k', label = 'W4A8 by Qserve')
-    # plt.bar(x+width,     sum_lat_list[2], width=width, color = '#3CBF8D',edgecolor='k', label = 'W4A8 by QQQ')
-    # plt.bar(x+width*2,   sum_lat_list[6], width=width, color = 'r',edgecolor='k', label = 'Kairos')
-    # plt.bar(x+width*3,   sum_lat_list[0], width=width, color = '#EADB52',edgecolor='k', label = 'FP16 by cuBLAS')
-    # plt.xticks(x, categories)
-    # plt.legend()
-    # plt.xticks(input_len)
-    # plt.grid(True)
 
     # plt.plot(input_len, sum_lat_list[0], color = '#EADB52', label = 'FP16 by cuBLAS')
     x = [i for i in range(len(input_len))]

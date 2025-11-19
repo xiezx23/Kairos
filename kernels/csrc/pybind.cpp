@@ -2,15 +2,15 @@
 #include <torch/extension.h>
 
 // QUANTIZATION WORKSPACE
-#include "edq_kernel/quant/quant_f16_to_i8.h"
+#include "kairos_kernel/quant/quant_f16_to_i8.h"
 // DEQUANTIZATION WORKSPACE
-#include "edq_kernel/dequant/dequant_i4_to_i8.h"
-#include "edq_kernel/dequant/dequant_i4_to_f16.h"
+#include "kairos_kernel/dequant/dequant_i4_to_i8.h"
+#include "kairos_kernel/dequant/dequant_i4_to_f16.h"
 
-#include "edq_kernel/dequant_awq_format/dequant_i4_to_i8.h"
-#include "edq_kernel/dequant_awq_format/dequant_i4_to_f16.h"
+#include "kairos_kernel/dequant_awq_format/dequant_i4_to_i8.h"
+#include "kairos_kernel/dequant_awq_format/dequant_i4_to_f16.h"
 
-#include "edq_kernel/trans_layout/trans_layout_marlin_c16_to_c8.h"
+#include "kairos_kernel/trans_layout/trans_layout_marlin_c16_to_c8.h"
 
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m)
