@@ -129,8 +129,7 @@ def smooth_scale_layer(layer, layer_kwargs, activations):
 
 @torch.no_grad()
 def smooth_scale(model, inputs):
-    decoderLayers = model.model.layers  # Qwen2.5 7B 是28层堆叠的Qwen2DecoderLayer
-    # 捕获embedding层的输出
+    decoderLayers = model.model.layers
     embed_output, layer_kwargs = catch_embedding_output(model, inputs)
     
     if "use_cache" in layer_kwargs:

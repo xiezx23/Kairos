@@ -9,15 +9,9 @@ ext_modules = [
     Pybind11Extension(
         "LUT_module",
         [
-<<<<<<< HEAD
-            "csrc/kairos_kernel/lut/lut_bindings.cpp",  # 包含上面绑定代码的文件
+            "csrc/kairos_kernel/lut/lut_bindings.cpp",
         ],
-        include_dirs=["csrc/kairos_kernel/lut/"],  # 包含lut.h的目录
-=======
-            "csrc/kairos_kernel/lut/lut_bindings.cpp",  # 包含上面绑定代码的文件
-        ],
-        include_dirs=["csrc/kairos_kernel/lut/"],  # 包含lut.h的目录
->>>>>>> main
+        include_dirs=["csrc/kairos_kernel/lut/"],
         language='c++'
     ),
 ]

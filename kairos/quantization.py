@@ -1,7 +1,6 @@
 import torch
 import time
 
-
 @torch.no_grad()
 def real_quantize_tensor_kairos(
     w, n_bit=4, q_group_size=128):
@@ -45,7 +44,7 @@ def quantize_tensor(x, bit = 8, q_type = 'S'):
     x = x.reshape(-1, x_shape[-1])
     max_int = 2**(bit-1) - 1
     x = x.to(torch.float32)
-    if q_type == 'A':    # 非对称量化,注意是有符号量化,uint8在计算时会溢出
+    if q_type == 'A':
         max_val = x.amax()
         min_val = x.amin()
         scale   = (max_val-min_val).clamp(min=1e-7) / 2 / max_int
@@ -82,9 +81,9 @@ def dequantize_tensor(x, scale, zero_pt = None, q_type = 'S'):
 
 @torch.no_grad()
 def pack_int4_data(q_data):
-    high_bits = q_data[:, 0::2] << 4     # 取偶数列(0,2,4...)左移4位
-    low_bits = q_data[:, 1::2]           # 取奇数列(1,3,5...)
-    pack_data = high_bits | low_bits     # 位或合并
+    high_bits = q_data[:, 0::2] << 4   
+    low_bits = q_data[:, 1::2]         
+    pack_data = high_bits | low_bits
     return pack_data.to(torch.int8)
 
 @torch.compile()
@@ -105,7 +104,7 @@ def quantize_tensor_int4(x, q_type = 'A', group_size = -1):
         assert x_shape[-1] % group_size == 0
         x = x.reshape(-1, group_size)
     x = x.to(torch.float32)
-    if q_type == 'A':   # 量化完是一个无符号数
+    if q_type == 'A':   
         max_int = 15    # 2**4 - 1``
         max_val = x.amax(dim=1, keepdim=True)
         min_val = x.amin(dim=1, keepdim=True)
@@ -328,7 +327,6 @@ def simu_quantize_tensor_autoscale(x, bit = 8, q_type = 'S', group_size = -1):
 @torch.no_grad()
 def simu_quantize_weight_mix_precsion(x, acti_max_row, bit = (4, 4), q_type = 'S', group_size = -1):
     """
-    !注意: 对于 A(N,C) @ W(C,M), W在存储时按(M,C)的形状
     acti_max_row: the abs average value in column of Activation.
     dim         : 0:->per_token / 1->per_channel.
     group_size  : how many vector will share one scale and zero point.
@@ -339,7 +337,6 @@ def simu_quantize_weight_mix_precsion(x, acti_max_row, bit = (4, 4), q_type = 'S
     dim = 0     # quantize by rows
     x_shape = x.shape
     # SCALE
-    """以激活值在列上的平均作为权重每一行的重要性系数"""
     high_precision_rate = 0.01
     high_precision_num = max(round(x.shape[-1]*high_precision_rate), 1)
     selected_idx = acti_max_row.topk(high_precision_num).indices
@@ -353,55 +350,6 @@ def simu_quantize_weight_mix_precsion(x, acti_max_row, bit = (4, 4), q_type = 'S
     # Q_MIN = qx.min()
     # print('qmax: {},  qmin: {},  groupSize: {}'.format(Q_MAX.item(), Q_MIN.item(), group_size))
     return pqx.reshape(x_shape).to(torch.float16)
-
-# @torch.no_grad()
-# def simu_quantize_weight_mix_precsion(x, acti_max_row, bit = (8, 4), q_type = 'S', group_size = -1):
-#     """
-#     !注意: 对于 A(N,C) @ W(C,M), W在存储时按(M,C)的形状
-#     acti_max_row: the abs average value in column of Activation.
-#     dim         : 0:->per_token / 1->per_channel.
-#     group_size  : how many vector will share one scale and zero point.
-#     with_scale  : scale on the other dim to smooth the data distribution.
-#     """
-#     assert x.dim() == 2
-#     assert q_type in ('A', 'S'), 'Illegal quantification config.'
-#     dim = 0     # quantize by rows
-#     x_shape = x.shape
-#     # SCALE
-#     """以激活值在列上的平均作为权重每一行的重要性系数"""
-#     high_precision_rate = 0.01
-#     high_precision_num = max(round(x.shape[-1]*high_precision_rate), 1)
-#     selected_idx = acti_max_row.topk(high_precision_num).indices
-
-#     def split_tensor(w, idx):
-#         # 直接索引获取第一部分
-#         part1 = w.index_select(1, idx)
-#         # 原位创建掩码减少内存峰值
-#         mask = torch.ones(w.size(1), dtype=torch.bool, device=w.device)
-#         mask[idx] = 0  # 原位操作避免复制
-#         part2 = w[:, mask]
-#         return part1, part2
-    
-#     def merge_tensors(part1, part2, i):
-#         device = part1.device
-#         m = part1.size(1) + part2.size(1)
-#         w = torch.empty((part1.size(0), m), device=device, dtype=part1.dtype)
-#         mask = torch.ones(m, dtype=torch.bool, device=device)
-#         mask[i] = False
-#         remaining = torch.where(mask)[0]       
-#         w[:, i] = part1  # 放置part1
-#         w[:, remaining] = part2  # 放置part2
-#         return w
-    
-#     hpw, lpw = split_tensor(x, selected_idx)
-#     # hpw = simu_quantize_tensor(hpw, bit = bit[0], q_type=q_type)
-#     lpw = simu_quantize_tensor(lpw, bit = bit[1], q_type=q_type)
-#     pqx = merge_tensors(hpw, lpw, selected_idx)
-#     # Q_MAX = qx.max()
-#     # Q_MIN = qx.min()
-#     # print('qmax: {},  qmin: {},  groupSize: {}'.format(Q_MAX.item(), Q_MIN.item(), group_size))
-#     return pqx.reshape(x_shape).to(torch.float16)
-
 
 if __name__ == '__main__':
     torch.manual_seed(11)
@@ -419,70 +367,3 @@ if __name__ == '__main__':
     print(x_simu)
 
     exit(0)
-
-    
-
-    x = simu_quantize_tensor(ori_x, bit=8, q_type='S', dim = 0, group_size=4)
-    loss = (ori_x - x).pow(2).mean().item()
-    print("Per-token    Symmetric Quantize Loss: ", loss)
-
-    x = simu_quantize_tensor(ori_x, bit=8, q_type='S', dim = 1, group_size=4)
-    loss = (ori_x - x).pow(2).mean().item()
-    print("Per-channel  Symmetric Quantize Loss: ", loss)
-
-    x = simu_quantize_tensor(ori_x, bit=8, q_type='S')
-    loss = (ori_x - x).pow(2).mean().item()
-    print("Per-tensor   Symmetric Quantize Loss: ", loss)
-
-    print('------------------------------------------------')
-
-    x = simu_quantize_tensor(ori_x, bit=8, q_type='A', dim = 0, group_size=4)
-    loss = (ori_x - x).pow(2).mean().item()
-    print("Per-token    Asymmetric Quantize Loss:", loss)
-    
-    x = simu_quantize_tensor(ori_x, bit=8, q_type='A', dim = 1, group_size=4)
-    loss = (ori_x - x).pow(2).mean().item()
-    print("Per-channel  Asymmetric Quantize Loss:", loss)
-
-    x = simu_quantize_tensor(ori_x, bit=8, q_type='A')
-    loss = (ori_x - x).pow(2).mean().item()
-    print("Per-tensor   Asymmetric Quantize Loss:", loss)
-
-    exit(0)
-
-    x = simu_quantize_tensor(ori_x, bit=8, q_type='A', dim=1, group_size=-1)
-    loss = (ori_x - x).pow(2).mean().item()
-    print("Loss: ", loss)
-    x = simu_quantize_tensor(ori_x, bit=8, q_type='A', dim=1, group_size=2)
-    loss = (ori_x - x).pow(2).mean().item()
-    print("Loss: ", loss)
-    x = simu_quantize_tensor(ori_x, bit=8, q_type='A', dim=1, group_size=4)
-    loss = (ori_x - x).pow(2).mean().item()
-    print("Loss: ", loss)
-    x, config = quantize_tensor(ori_x, q_type='A')
-    x = (x - config['zero_pt']) * config['scale']
-    loss = (ori_x - x).pow(2).mean().item()
-    print("Loss: ", loss)
-    exit(0)
-
-    x = ori_x
-    w = ori_w
-    tst = time.time()
-    o1 = x @ w
-    torch.cuda.synchronize()  # 等待 GPU 计算完成
-    ted = time.time()
-    print("GPU time (FP16): ", ted - tst, "s")
-    print("o.max:", o1.max())
-
-    x, q_config1 = quantize_tensor(ori_x, bit=8, q_type='A', dim=0)
-    w, q_config2 = quantize_tensor(ori_w, bit=8, q_type='S', dim=1)
-    tst = time.time()
-    o = torch._int_mm(x, w).to(torch.float32)
-    o = post_gemm_dequant(o, x, w, q_config1, q_config2)
-    torch.cuda.synchronize()  # 等待 GPU 计算完成
-    ted = time.time()
-    print("GPU time (INT8): ", ted - tst, "s")
-    print("o.max:", o.max())
-
-    loss = (o - o1).pow(2).mean().item()
-    print("Loss: ", loss)
