@@ -1,6 +1,7 @@
 cd kernels
 # pip uninstall kairos_cuda_accel -y
 python setup.py install
+python lut_setup.py install
 cd ..
 
 cd thirdparty/AWQ/kernels
