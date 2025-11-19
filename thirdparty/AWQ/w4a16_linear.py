@@ -60,18 +60,6 @@ class W4A16Linear_AWQ(torch.nn.Module):
         if linear.bias is not None:
             q_linear.bias = linear.bias.clone().half().contiguous()
         return q_linear
-    
-    @torch.no_grad
-    def update_weight(self, weight):
-        if self.enable_accel:
-            self.qweight, self.scales, self.scaled_zeros = \
-                quant_weight_awq(weight.to(torch.float16), self.group_size)
-        else:
-            tmp_weight, q_config = quantize_tensor_int4(
-                weight.to(torch.float16), group_size=self.group_size)
-            self.scale = q_config['scale']
-            self.zeros = q_config['zero_pt']
-            self.weight = pack_int4_data(tmp_weight)
 
     @torch.no_grad
     def forward(self, input:torch.Tensor) -> torch.Tensor:

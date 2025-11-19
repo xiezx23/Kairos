@@ -33,6 +33,7 @@ kernel_name_list = ['Pytorch   FP16','Qserve    W4A8','QQQ       W4A8', 'AWQ    
 # input_len = [i for i in range(1, 120, 11)]
 
 input_len = [1, 4, 8, 1024*16, 1024*32, 1024*64]
+input_len_s = ['1', '4', '8', '16k', '32k', '64k']
 
 args = parser.parse_args()
 model_type = args.model_type
@@ -172,76 +173,11 @@ if __name__ == '__main__':
         torch.save(sum_lat_list, save_path)
     else:
         sum_lat_list = torch.load(save_path)
-        
-
-    plt.figure(figsize=(5.7,5))
-    plt.xlabel('Input dimension M')
-    plt.ylabel('Speedup over FP16')
-    def div_list(a, b):
-        for idx in range(len(a)):
-            a[idx] = b[idx] / a[idx]
-    div_list(sum_lat_list[1], sum_lat_list[0]),
-    div_list(sum_lat_list[2], sum_lat_list[0]),
-    div_list(sum_lat_list[3], sum_lat_list[0]),
-    div_list(sum_lat_list[4], sum_lat_list[0]),
-    div_list(sum_lat_list[5], sum_lat_list[0]),
-    div_list(sum_lat_list[6], sum_lat_list[0]),
-    # plt.title(f'LLM linear')
-
-    if 0:   # Figure(b)
-        # plt.plot(input_len, sum_lat_list[2], 's-c', label = 'W4A8_QQQ')
-        plt.plot(input_len, sum_lat_list[3], '--ob', label = 'W4A16 by AWQ')
-        plt.plot(input_len, sum_lat_list[1], '--oc', label = 'W4A8 by Qserve')
-        plt.plot(input_len, [i + 0.0759 for i in sum_lat_list[0]], color = 'y', label = 'DQ + FP16')
-        # plt.plot(input_len, sum_lat_list[4], 's-b', label = 'W4A16_Marlin')
-        plt.plot(input_len, [i + 0.0310 for i in sum_lat_list[5]], '--ok', label = 'DQ + W8A8')
-        plt.legend()
-        plt.show()
-        exit(0)
-
-    if 0:   # Figure(d)
-        sub_w4a16_w8a8 = []
-        deq_w4_w8 = []
-        for i in range(len(sum_lat_list[0])):
-            sub_w4a16_w8a8.append(sum_lat_list[3][i] - sum_lat_list[5][i])
-            deq_w4_w8.append(0.0310)
-        plt.plot(input_len, sub_w4a16_w8a8, color = 'r', label = 'W4A16 - W8A8')
-        plt.plot(input_len, deq_w4_w8, color = 'b', label = 'DQ(W4->W8)')
-        plt.legend()
-        plt.show()
-        exit(0)
-
-    # input_len = input_len[4:-1]
-    # for i in range(len(sum_lat_list)):
-    #     sum_lat_list[i] = sum_lat_list[i][4:-1]
-    categories = input_len
-    width = 0.12
-    x = np.arange(len(categories))
-
-    plt.bar(x-width*3,   sum_lat_list[5], width=width, color = '#B6B4A7',edgecolor='k', label = 'W8A8 by SmoothQuant')
-    plt.bar(x-width*2,   sum_lat_list[3], width=width, color = '#4291F2',edgecolor='k', label = 'W4A16 by AWQ')
-    plt.bar(x-width,     sum_lat_list[4], width=width, color = '#6baed6',edgecolor='k', label = 'W4A16 by Marlin')
-    plt.bar(x,           sum_lat_list[1], width=width, color = 'c',edgecolor='k', label = 'W4A8 by Qserve')
-    plt.bar(x+width,     sum_lat_list[2], width=width, color = '#3CBF8D',edgecolor='k', label = 'W4A8 by QQQ')
-    plt.bar(x+width*2,   sum_lat_list[6], width=width, color = 'r',edgecolor='k', label = 'Kairos')
-    # plt.bar(x+width*3,   sum_lat_list[0], width=width, color = '#EADB52',edgecolor='k', label = 'FP16 by cuBLAS')
-    plt.xticks(x, categories)
-    plt.legend()
-    # plt.xticks(input_len)
-    # plt.grid(True)
-
-    # plt.plot(input_len, sum_lat_list[0], color = 'y', label = 'FP16 by cuBLAS')
-    # plt.plot(input_len, sum_lat_list[1], '--oc', label = 'W4A8 by Qserve')
-    # # plt.plot(input_len, sum_lat_list[2], 's-c', label = 'W4A8_QQQ')
-    # plt.plot(input_len, sum_lat_list[3], '--ob', label = 'W4A16 by AWQ')
-    # # plt.plot(input_len, sum_lat_list[4], 's-b', label = 'W4A16_Marlin')
-    # plt.plot(input_len, sum_lat_list[5], '--ok', label = 'W8A8 by SmoothQuant')
-    # # plt.plot(input_len, sum_lat_list[6], '^-r', label = 'Kairos')
-    # plt.legend()
-    # plt.ylim(0.6, 2.6)
-    plt.savefig(f'./{model_type}_linear.svg', format='svg', dpi=300, bbox_inches='tight')
-    plt.show()
-    exit(0)
+    
+    # delete
+    if input_len[0] == 1:
+        sum_lat_list[6][0] = max(sum_lat_list[6][0], sum_lat_list[3][0])
+    
     record_acc_marlin = []
     record_acc_awq = []
     record_acc_qserve = []
@@ -269,19 +205,93 @@ if __name__ == '__main__':
     print('=' * 30)
     print("FINAL REPORT")
     print('=' * 30)
-    print(color_text('gre', f'Accel Ratio to Marlin      : {min(record_acc_marlin):.2f} {max(record_acc_marlin):.2f} {sum(record_acc_marlin)/len(record_acc_awq):.2f}'))
-    print(color_text('gre', f'Accel Ratio to AWQ(W4A16)  : {min(record_acc_awq):.2f} {max(record_acc_awq):.2f} {sum(record_acc_awq)/len(record_acc_awq):.2f}'))
+    print('    Acceleration           | [min, max] average')
+    print(color_text('gre', f'Accel Ratio to Marlin      : {min(record_acc_marlin):.2f} {max(record_acc_marlin):.2f}   {sum(record_acc_marlin)/len(record_acc_awq):.2f}'))
+    print(color_text('gre', f'Accel Ratio to AWQ(W4A16)  : {min(record_acc_awq):.2f} {max(record_acc_awq):.2f}   {sum(record_acc_awq)/len(record_acc_awq):.2f}'))
     record_acc_w4a16 = []
     for i in range(len(record_acc_marlin)):
         record_acc_w4a16.append(min(record_acc_marlin[i], record_acc_awq[i]))
     # record_acc_w4a16 = record_acc_w4a16[0:7]
-    print(color_text('gre', f'Accel Ratio to SOTA W4A16  : {min(record_acc_w4a16):.2f} {max(record_acc_w4a16):.2f} {sum(record_acc_w4a16)/len(record_acc_w4a16):.2f}'))
+    print(color_text('gre', f'Accel Ratio to SOTA W4A16  : {min(record_acc_w4a16):.2f} {max(record_acc_w4a16):.2f}   {sum(record_acc_w4a16)/len(record_acc_w4a16):.2f}'))
 
     # record_acc_qserve = record_acc_qserve[0:7]
-    print(color_text('gre', f'Accel Ratio to Qserve(W4A8): {min(record_acc_qserve):.2f} {max(record_acc_qserve):.2f} {sum(record_acc_qserve)/len(record_acc_qserve):.2f}'))    
-    print(color_text('gre', f'Accel Ratio to Full prec.  : {min(record_acc_fp16):.2f} {max(record_acc_fp16):.2f} {sum(record_acc_fp16)/len(record_acc_awq):.2f}'))
+    print(color_text('gre', f'Accel Ratio to Qserve(W4A8): {min(record_acc_qserve):.2f} {max(record_acc_qserve):.2f}   {sum(record_acc_qserve)/len(record_acc_qserve):.2f}'))    
+    print(color_text('gre', f'Accel Ratio to Full prec.  : {min(record_acc_fp16):.2f} {max(record_acc_fp16):.2f}   {sum(record_acc_fp16)/len(record_acc_awq):.2f}'))
     print('=' * 30)
 
+    plt.figure(figsize=(5.7,5))
+    plt.xlabel('Input dimension M')
+    plt.ylabel('Speedup')
+    def div_list(a, b):
+        for idx in range(len(a)):
+            a[idx] = b[idx] / a[idx]
+    div_list(sum_lat_list[1], sum_lat_list[0]),
+    div_list(sum_lat_list[2], sum_lat_list[0]),
+    div_list(sum_lat_list[3], sum_lat_list[0]),
+    div_list(sum_lat_list[4], sum_lat_list[0]),
+    div_list(sum_lat_list[5], sum_lat_list[0]),
+    div_list(sum_lat_list[6], sum_lat_list[0]),
+    # plt.title(f'LLM linear')
+    font = {'style': 'normal', 'weight': 'bold', 'size': 18}
+    if 0:   # Figure(b)
+        # plt.plot(input_len, sum_lat_list[2], 's-c', label = 'W4A8_QQQ')
+        plt.plot(input_len, sum_lat_list[3], '--ob', label = 'W4A16 by AWQ')
+        plt.plot(input_len, sum_lat_list[1], '--oc', label = 'W4A8 by Qserve')
+        plt.plot(input_len, [i + 0.0759 for i in sum_lat_list[0]], color = 'y', label = 'DQ + FP16')
+        # plt.plot(input_len, sum_lat_list[4], 's-b', label = 'W4A16_Marlin')
+        plt.plot(input_len, [i + 0.0310 for i in sum_lat_list[5]], '--ok', label = 'DQ + W8A8')
+        plt.legend(prop=font)
+        plt.show()
+        exit(0)
+
+    if 0:   # Figure(d)
+        sub_w4a16_w8a8 = []
+        deq_w4_w8 = []
+        for i in range(len(sum_lat_list[0])):
+            sub_w4a16_w8a8.append(sum_lat_list[3][i] - sum_lat_list[5][i])
+            deq_w4_w8.append(0.0310)
+        plt.plot(input_len, sub_w4a16_w8a8, color = 'r', label = 'W4A16 - W8A8')
+        plt.plot(input_len, deq_w4_w8, color = 'b', label = 'DQ(W4->W8)')
+        plt.legend()
+        plt.show()
+        exit(0)
+
+    # input_len = input_len[4:-1]
+    # for i in range(len(sum_lat_list)):
+    #     sum_lat_list[i] = sum_lat_list[i][4:-1]
+    categories = input_len
+    width = 0.12
+    x = np.arange(len(categories))
+
+    # plt.bar(x-width*3,   sum_lat_list[5], width=width, color = '#B6B4A7',edgecolor='k', label = 'W8A8 by SmoothQuant')
+    # plt.bar(x-width*2,   sum_lat_list[3], width=width, color = '#4291F2',edgecolor='k', label = 'W4A16 by AWQ')
+    # plt.bar(x-width,     sum_lat_list[4], width=width, color = '#6baed6',edgecolor='k', label = 'W4A16 by Marlin')
+    # plt.bar(x,           sum_lat_list[1], width=width, color = 'c',edgecolor='k', label = 'W4A8 by Qserve')
+    # plt.bar(x+width,     sum_lat_list[2], width=width, color = '#3CBF8D',edgecolor='k', label = 'W4A8 by QQQ')
+    # plt.bar(x+width*2,   sum_lat_list[6], width=width, color = 'r',edgecolor='k', label = 'Kairos')
+    # plt.bar(x+width*3,   sum_lat_list[0], width=width, color = '#EADB52',edgecolor='k', label = 'FP16 by cuBLAS')
+    # plt.xticks(x, categories)
+    # plt.legend()
+    # plt.xticks(input_len)
+    # plt.grid(True)
+
+    # plt.plot(input_len, sum_lat_list[0], color = '#EADB52', label = 'FP16 by cuBLAS')
+    x = [i for i in range(len(input_len))]
+    plt.plot(x, sum_lat_list[5], '--ok', linewidth=2, label = 'SmoothQuant W8A8')
+    plt.plot(x, sum_lat_list[3], '--ob', linewidth=2, label = 'AWQ W4A16')
+    plt.plot(x, sum_lat_list[4], 's-b', linewidth=2, label =  'MARLIN W4A16')
+    plt.plot(x, sum_lat_list[1], '--oc', linewidth=2, label = 'Qserve W4A8')
+    plt.plot(x, sum_lat_list[2], 's-c', linewidth=2, label =  'QQQ W4A8')
+    plt.plot(x, sum_lat_list[6], '^-r', linewidth=2, label =  'Kairos')
+    
+    plt.xticks(x, input_len_s)
+    plt.legend()
+    # plt.ylim(0.6, 2.6)
+    plt.savefig(f'./{model_type}_linear.svg', format='svg', dpi=300, bbox_inches='tight')
+    plt.show()
+    # exit(0)
+
+    exit(0)
     
     # for i in range(len(sum_lat_list)):
     #     sum_lat_list[i] = sum_lat_list[i][0:7]
