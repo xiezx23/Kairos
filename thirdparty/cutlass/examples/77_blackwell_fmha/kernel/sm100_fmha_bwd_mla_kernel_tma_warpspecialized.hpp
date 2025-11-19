@@ -62,11 +62,16 @@ struct Sm100FmhaBwdMlaKernelTmaWarpSpecialized {
 
   using TileShapeQ = decltype(get<0>(TileShape{}));
   using TileShapeK = decltype(get<1>(TileShape{}));
+<<<<<<< HEAD
   using TileShapeDQK = decltype(get<2>(TileShape{}));
+=======
+  using TileShapkairosK = decltype(get<2>(TileShape{}));
+>>>>>>> main
   using TileShapeDVO = decltype(get<3>(TileShape{}));
 
   using TmemAllocator = cute::TMEM::Allocator1Sm;
   struct TmemAllocation {
+<<<<<<< HEAD
     static constexpr uint32_t kDK = 0;                     // TileShapeK x TileShapeDQK x acc
     static constexpr uint32_t kDV = kDK + TileShapeDQK{};  // TileShapeK x TileShapeDVO x acc
     static constexpr uint32_t kDQ = kDV + TileShapeDVO{};  // TileShapeQ x TileShapeDQK x acc
@@ -74,6 +79,15 @@ struct Sm100FmhaBwdMlaKernelTmaWarpSpecialized {
     static constexpr uint32_t kS = kDQ + 65536 * 16;
     static constexpr uint32_t kP = kS;
     static constexpr uint32_t kTotal = kDQ + TileShapeDQK{};
+=======
+    static constexpr uint32_t kDK = 0;                     // TileShapeK x TileShapkairosK x acc
+    static constexpr uint32_t kDV = kDK + TileShapkairosK{};  // TileShapeK x TileShapeDVO x acc
+    static constexpr uint32_t kDQ = kDV + TileShapeDVO{};  // TileShapeQ x TileShapkairosK x acc
+    static constexpr uint32_t kDP = kDQ;                   // TileShapeK x TileShapeQ   x inp
+    static constexpr uint32_t kS = kDQ + 65536 * 16;
+    static constexpr uint32_t kP = kS;
+    static constexpr uint32_t kTotal = kDQ + TileShapkairosK{};
+>>>>>>> main
   };
 
   static_assert(
@@ -129,7 +143,11 @@ struct Sm100FmhaBwdMlaKernelTmaWarpSpecialized {
       Element, TensorStrideContiguousK, Alignment,
       Element, TensorStrideContiguousK, Alignment,
       ElementAcc,
+<<<<<<< HEAD
       Shape<TileShapeQ, TileShapeK, TileShapeDQK>,
+=======
+      Shape<TileShapeQ, TileShapeK, TileShapkairosK>,
+>>>>>>> main
       ClusterShape, cutlass::gemm::collective::StageCount<kStages>,
       Schedule>::CollectiveOp;
   using TileShapeQK = typename CollectiveMmaQK::TileShape;
@@ -167,7 +185,11 @@ struct Sm100FmhaBwdMlaKernelTmaWarpSpecialized {
       Element, TensorStrideContiguousK , Alignment,
       Element, TensorStrideContiguousMN, Alignment,
       ElementAcc,
+<<<<<<< HEAD
       Shape<TileShapeK, TileShapeDQK, TileShapeQ>,
+=======
+      Shape<TileShapeK, TileShapkairosK, TileShapeQ>,
+>>>>>>> main
       ClusterShape, cutlass::gemm::collective::StageCount<kStages>,
       Schedule>::CollectiveOp;
   using TileShapeDSQ = typename CollectiveMmaDSQ::TileShape;
@@ -180,7 +202,11 @@ struct Sm100FmhaBwdMlaKernelTmaWarpSpecialized {
       Element, TensorStrideContiguousMN, Alignment,
       Element, TensorStrideContiguousMN, Alignment,
       ElementAcc,
+<<<<<<< HEAD
       Shape<TileShapeQ, TileShapeDQK, TileShapeK>,
+=======
+      Shape<TileShapeQ, TileShapkairosK, TileShapeK>,
+>>>>>>> main
       ClusterShape, cutlass::gemm::collective::StageCount<kStages>,
       Schedule>::CollectiveOp;
   using TileShapeDSK = typename CollectiveMmaDSK::TileShape;
@@ -194,7 +220,11 @@ struct Sm100FmhaBwdMlaKernelTmaWarpSpecialized {
   using PipelineLoadComputeSumOdO = PipelineAsync<1>;
   using PipelineMmaComputeS = PipelineUmmaAsync<1>;
   using PipelineMmaComputeDP = PipelineUmmaAsync<1>;
+<<<<<<< HEAD
   using PipelineMmaReduceDQ = PipelineUmmaAsync<1>;
+=======
+  using PipelineMmaReduckairos = PipelineUmmaAsync<1>;
+>>>>>>> main
   using PipelineComputeMmaP = PipelineUmmaConsumerAsync<1>;
   using PipelineComputeMmaDS = PipelineUmmaConsumerAsync<kStagesComputeSmem>;
   using PipelineMmaComputeDKDV = PipelineUmmaAsync<2>;
@@ -208,7 +238,11 @@ struct Sm100FmhaBwdMlaKernelTmaWarpSpecialized {
     alignas(16) typename PipelineLoadComputeSumOdO::SharedStorage load_compute_sum_odo;
     alignas(16) typename PipelineMmaComputeS::SharedStorage mma_compute_s;
     alignas(16) typename PipelineMmaComputeDP::SharedStorage mma_compute_dp;
+<<<<<<< HEAD
     alignas(16) typename PipelineMmaReduceDQ::SharedStorage mma_reduce_dq;
+=======
+    alignas(16) typename PipelineMmaReduckairos::SharedStorage mma_reduce_dq;
+>>>>>>> main
     alignas(16) typename PipelineComputeMmaP::SharedStorage compute_mma_p;
     alignas(16) typename PipelineComputeMmaDS::SharedStorage compute_mma_ds;
     alignas(16) typename PipelineMmaComputeDKDV::SharedStorage mma_compute_dkdv;
@@ -234,12 +268,21 @@ struct Sm100FmhaBwdMlaKernelTmaWarpSpecialized {
   using SmemLayoutP = decltype(restage(typename CollectiveMmaPDO::SmemLayoutA{}, _1{}));
   using SmemLayoutPT = decltype(restage(typename CollectiveMmaDSK::SmemLayoutA{}, _1{}));
 
+<<<<<<< HEAD
   using TileShapeDQ = _32;
   using SmemAtomDQ = decltype(cutlass::gemm::collective::detail::sm100_smem_selector<
       cute::UMMA::Major::K, ElementAcc, TileShapeQ, TileShapeDQ
   >());
   using SmemShapeDQ = Shape<TileShapeQ, TileShapeDQ, Int<kStagesReduceTmaStore>>;
   using SmemLayoutDQ = decltype(tile_to_shape(SmemAtomDQ{}, SmemShapeDQ{}, Step<_2, _1, _3>{}));
+=======
+  using TileShapkairos = _32;
+  using SmemAtomDQ = decltype(cutlass::gemm::collective::detail::sm100_smem_selector<
+      cute::UMMA::Major::K, ElementAcc, TileShapeQ, TileShapkairos
+  >());
+  using SmemShapkairos = Shape<TileShapeQ, TileShapkairos, Int<kStagesReduceTmaStore>>;
+  using SmemLayoutDQ = decltype(tile_to_shape(SmemAtomDQ{}, SmemShapkairos{}, Step<_2, _1, _3>{}));
+>>>>>>> main
 
   struct TensorStorage {
     union {
@@ -306,7 +349,11 @@ struct Sm100FmhaBwdMlaKernelTmaWarpSpecialized {
     ElementAcc* ptr_dq_acc;
     TensorStride stride_dq_acc;
 
+<<<<<<< HEAD
     ElementAcc softmax_scale = 1.0f / sqrtf(TileShapeDQK{});
+=======
+    ElementAcc softmax_scale = 1.0f / sqrtf(TileShapkairosK{});
+>>>>>>> main
   };
 
   using TMA_K = typename CollectiveMmaQK::Params::TMA_B;
@@ -678,8 +725,13 @@ struct Sm100FmhaBwdMlaKernelTmaWarpSpecialized {
       typename PipelineMmaComputeS::PipelineState& pipeline_mma_compute_s_producer_state,
       PipelineMmaComputeDP& pipeline_mma_compute_dp,
       typename PipelineMmaComputeDP::PipelineState& pipeline_mma_compute_dp_producer_state,
+<<<<<<< HEAD
       PipelineMmaReduceDQ& pipeline_mma_reduce_dq,
       typename PipelineMmaReduceDQ::PipelineState& pipeline_mma_reduce_dq_producer_state,
+=======
+      PipelineMmaReduckairos& pipeline_mma_reduce_dq,
+      typename PipelineMmaReduckairos::PipelineState& pipeline_mma_reduce_dq_producer_state,
+>>>>>>> main
       PipelineComputeMmaP& pipeline_compute_mma_p,
       typename PipelineComputeMmaP::PipelineState& pipeline_compute_mma_p_consumer_state,
       PipelineComputeMmaDS& pipeline_compute_mma_ds,
@@ -982,7 +1034,11 @@ struct Sm100FmhaBwdMlaKernelTmaWarpSpecialized {
     auto [Q, K, D, D_VO, HB] = problem_shape;
     auto [blk_coord_q, blk_coord_k, blk_coord_d, blk_coord_dv, blk_coord_batch] = blk_coord;
 
+<<<<<<< HEAD
     auto mDK_in = make_tensor(make_gmem_ptr(epilogue_args.ptr_dk), make_shape(K, TileShapeDQK{}, HB), epilogue_args.stride_dk);
+=======
+    auto mDK_in = make_tensor(make_gmem_ptr(epilogue_args.ptr_dk), make_shape(K, TileShapkairosK{}, HB), epilogue_args.stride_dk);
+>>>>>>> main
     auto mDK = domain_offset(select<1,2,4>(blk_offset), mDK_in);
     auto gDK = local_tile(mDK, TileShapeDSQ{}, make_coord(_,_,_), Step<_1, _1, X>{})
         (_, _, blk_coord_k, _0{}, blk_coord_batch);
@@ -1034,7 +1090,11 @@ struct Sm100FmhaBwdMlaKernelTmaWarpSpecialized {
     auto tDKtDK = partition_fragment_C(TiledMmaDSQ{}, select<0,1>(TileShapeDSQ{}))(make_coord(_,_),_0{},_0{});
     tDKtDK.data() = TmemAllocation::kDK;
 
+<<<<<<< HEAD
     auto mDK_in = make_tensor(make_gmem_ptr(epilogue_args.ptr_dk), make_shape(K, TileShapeDQK{}, HB), epilogue_args.stride_dk);
+=======
+    auto mDK_in = make_tensor(make_gmem_ptr(epilogue_args.ptr_dk), make_shape(K, TileShapkairosK{}, HB), epilogue_args.stride_dk);
+>>>>>>> main
     auto mDK = domain_offset(select<1,2,4>(blk_offset), mDK_in);
     auto gDK = local_tile(mDK, TileShapeDSQ{}, make_coord(_,_,_), Step<_1, _1, X>{})
         (_, _, blk_coord_k, _0{}, blk_coord_batch);
@@ -1390,8 +1450,13 @@ struct Sm100FmhaBwdMlaKernelTmaWarpSpecialized {
       MainloopArguments const& mainloop_args,
       MainloopParams const& mainloop_params,
       TensorStorage& shared_tensors,
+<<<<<<< HEAD
       PipelineMmaReduceDQ& pipeline_mma_reduce_dq,
       typename PipelineMmaReduceDQ::PipelineState& pipeline_mma_reduce_dq_consumer_state,
+=======
+      PipelineMmaReduckairos& pipeline_mma_reduce_dq,
+      typename PipelineMmaReduckairos::PipelineState& pipeline_mma_reduce_dq_consumer_state,
+>>>>>>> main
       PipelineReduceTmaStore& pipeline_reduce_tma_store,
       typename PipelineReduceTmaStore::PipelineState& pipeline_reduce_tma_store_producer_state) {
 
@@ -1401,7 +1466,11 @@ struct Sm100FmhaBwdMlaKernelTmaWarpSpecialized {
 
     auto [blk_coord_q, blk_coord_k, blk_coord_d, blk_coord_dv, blk_coord_batch] = blk_coord;
 
+<<<<<<< HEAD
     // must match TileShapeDQ
+=======
+    // must match TileShapkairos
+>>>>>>> main
     auto load_op = SM100_TMEM_LOAD_16dp32b16x{};
 
     auto tDQtDQ = partition_fragment_C(TiledMmaDSK{}, select<0,1>(TileShapeDSK{}))(make_coord(_,_),_0{},_0{});
@@ -1583,6 +1652,7 @@ struct Sm100FmhaBwdMlaKernelTmaWarpSpecialized {
       pipeline_mma_compute_dp_params,
       ClusterShape{}, /*barrier init*/ cute::true_type{}, /*mask calc*/cute::false_type{});
 
+<<<<<<< HEAD
     typename PipelineMmaReduceDQ::Params pipeline_mma_reduce_dq_params;
     if (role == WarpRole::Mma) {
       pipeline_mma_reduce_dq_params.role = PipelineMmaReduceDQ::ThreadCategory::Producer;
@@ -1593,6 +1663,18 @@ struct Sm100FmhaBwdMlaKernelTmaWarpSpecialized {
     pipeline_mma_reduce_dq_params.consumer_arv_count = kNumReduceWarps * cutlass::NumThreadsPerWarp;
     pipeline_mma_reduce_dq_params.initializing_warp = initializing_warp++;
     PipelineMmaReduceDQ pipeline_mma_reduce_dq(
+=======
+    typename PipelineMmaReduckairos::Params pipeline_mma_reduce_dq_params;
+    if (role == WarpRole::Mma) {
+      pipeline_mma_reduce_dq_params.role = PipelineMmaReduckairos::ThreadCategory::Producer;
+    }
+    if (role == WarpRole::Reduce) {
+      pipeline_mma_reduce_dq_params.role = PipelineMmaReduckairos::ThreadCategory::Consumer;
+    }
+    pipeline_mma_reduce_dq_params.consumer_arv_count = kNumReduceWarps * cutlass::NumThreadsPerWarp;
+    pipeline_mma_reduce_dq_params.initializing_warp = initializing_warp++;
+    PipelineMmaReduckairos pipeline_mma_reduce_dq(
+>>>>>>> main
       shared_storage.pipelines.mma_reduce_dq,
       pipeline_mma_reduce_dq_params,
       ClusterShape{}, /*barrier init*/ cute::true_type{}, /*mask calc*/cute::false_type{});

@@ -1,5 +1,5 @@
 import torch
-from edq.dynamic_linear import DynamicLinear
+from kairos.dynamic_linear import DynamicLinear
 from thirdparty.SmoothQuant.w8a8_linear import W8A8Linear
 from thirdparty.Qserve.w4a8_linear import W4A8Linear
 from thirdparty.QQQ.w4a8_linear import W4A8Linear_QQQ

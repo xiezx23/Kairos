@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from  utils.color_print import *
 from utils.analyse_tensor import analyse_tensor
-from edq.quant_model import get_name_linears
+from kairos.quant_model import get_name_linears
 
 @torch.no_grad()
 def catch_embedding_output(model, inputs):

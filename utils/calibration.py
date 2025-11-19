@@ -17,7 +17,7 @@ def get_calibration_set(tokenizer, sample_num = 512, per_seq_len = 512, model_ty
                 if (len(samples) == sample_num):
                     break
         samples = torch.cat(samples, dim=1)             # torch.Size = ([1, totalTokenLen])
-        seq_num = samples.shape[-1] // per_seq_len      # 按每条512个token划分
+        seq_num = samples.shape[-1] // per_seq_len
         split_samples = [samples[:, i*per_seq_len : (i+1)*per_seq_len] for i in range(seq_num)]
         res =  torch.cat(split_samples, dim=0).cuda()   # torch.Size = ([seq_num, per_seq_len])
         attention_mask = torch.ones(1, per_seq_len, device='cuda')
@@ -37,5 +37,4 @@ def generate_random_token_sequence(tokenizer, device, seq_length=100):
     # input_ids = torch.tensor([128 for _ in range(seq_length)]).to(device).view(1,seq_length)
     # Attention Mask(attention_mask)
     attention_mask = torch.ones(1, seq_length).to(device)
-    # 转换为模型输入格式
     return {'input_ids':input_ids, 'attention_mask':attention_mask}

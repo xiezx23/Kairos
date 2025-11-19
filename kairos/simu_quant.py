@@ -1,9 +1,9 @@
 import torch
-from edq.quantization import (
+from kairos.quantization import (
     simu_quantize_tensor, quantize_tensor, dequantize_tensor
 )
 from utils.analyse_tensor import analyse_tensor
-from edq.quant_config import LinearQuantConfig
+from kairos.quant_config import LinearQuantConfig
 
 class SimuQuantLinear(torch.nn.Module):
     @torch.no_grad

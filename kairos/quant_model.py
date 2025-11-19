@@ -3,7 +3,7 @@ import tqdm
 import gc
 from utils.color_print import *
 from utils.global_config import quant_strategy
-from edq.quant_config import LinearQuantConfig
+from kairos.quant_config import LinearQuantConfig
 
 
 from test.chronosQuant.two_stage_quant import test_TSQ

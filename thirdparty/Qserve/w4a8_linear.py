@@ -13,7 +13,11 @@
 # }
 import omniserve_backend.qgemm_w4a8_per_chn
 import omniserve_backend.qgemm_w4a8_per_group
+<<<<<<< HEAD
 import edq_cuda_accel
+=======
+import kairos_cuda_accel
+>>>>>>> main
 import awq_backend
 from thirdparty.Qserve.quantization import *
 import torch

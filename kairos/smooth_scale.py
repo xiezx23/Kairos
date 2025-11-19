@@ -10,10 +10,10 @@ from transformers.models.qwen2.modeling_qwen2 import Qwen2DecoderLayer, Qwen2RMS
 
 from  utils.color_print import *
 from utils.global_config import quant_strategy
-from edq.simu_quant import SimuQuantLinear, RealQuantLinearWithScale
-from edq.quant_config import LinearQuantConfig
-from edq.quant_model import set_op_by_name, get_name_linears
-from edq.catch_tensor import catch_embedding_output
+from kairos.simu_quant import SimuQuantLinear, RealQuantLinearWithScale
+from kairos.quant_config import LinearQuantConfig
+from kairos.quant_model import set_op_by_name, get_name_linears
+from kairos.catch_tensor import catch_embedding_output
 
 @torch.no_grad()
 def get_op_by_name(module, op_name):

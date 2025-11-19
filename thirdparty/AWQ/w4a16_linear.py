@@ -1,7 +1,7 @@
 import torch
 import tqdm
 import gc
-from edq.quantization import *
+from kairos.quantization import *
 from thirdparty.AWQ.awq_method import quant_weight_awq, calculate_zeros_width
 if hasattr(torch, "cuda") and torch.cuda.is_available():
     device  = 'cuda'

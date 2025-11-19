@@ -556,7 +556,11 @@ struct BwdRunner {
   using StrideLSE = cute::tuple<int, int, _1>; // B H Q
 
   // Backwards specific
+<<<<<<< HEAD
   using StrideDQ = cute::tuple<int, int, int, _1>; // B H Q D
+=======
+  using Stridkairos = cute::tuple<int, int, int, _1>; // B H Q D
+>>>>>>> main
   using StrideDK = cute::tuple<int, int, int, _1>; // B H K D
   using StrideDV = cute::tuple<int, int, int, _1>; // B H K D
   using StrideDO = cute::tuple<int, int, int, _1>; // B H Q D
@@ -572,7 +576,11 @@ struct BwdRunner {
   StrideO stride_O;
   StrideLSE stride_LSE;
 
+<<<<<<< HEAD
   StrideDQ stride_dQ;
+=======
+  Stridkairos stride_dQ;
+>>>>>>> main
   StrideDK stride_dK;
   StrideDV stride_dV;
   StrideDO stride_dO;

@@ -3,7 +3,7 @@ from utils.color_print import *
 from utils.global_config import *
 from modelscope import snapshot_download
 
-# 下载 Qwen2.5 7B Instruct
+# Download Qwen2.5 7B Instruct
 if (os.path.exists( model_path_qwen2)):
     print(gre_prefix, f'Already have {model_path_qwen2}', default_color)
 else:
@@ -14,7 +14,7 @@ else:
         model_dir = snapshot_download('Qwen/Qwen2___5-7B-Instruct', cache_dir=model_root_path)
         print(f'Finish download: {model_path_qwen2}')
 
-# 下载 Llama3 8B
+# Download LLaMa-3 8B
 if (os.path.exists( model_path_llama)):
     print(gre_prefix, f'Already have {model_path_llama}', default_color)
 else:
