@@ -14,7 +14,7 @@
 #include "w8a8/act.h"
 
 <<<<<<< HEAD
-#include "dequant_edq/deq_i4_to_f16.h"
+#include "dequant_kairos/deq_i4_to_f16.h"
 =======
 #include "dequant_kairos/deq_i4_to_f16.h"
 >>>>>>> main

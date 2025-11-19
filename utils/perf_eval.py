@@ -131,3 +131,39 @@ class InferModel():
         print(f"TTFT:            {ttft:.2f} ms")
         print(f"TPOT:            {tpot:.2f} ms/token")
         print(gre_prefix+"------------------------------"+default_color)
+
+@torch.no_grad
+def eval_perf(model, tokenizer, inputs, ttft_times=4, max_new_tokens=100):
+    # text_input = text_input[0: len(text_input)//2]
+    inputs_len = inputs['input_ids'].shape[1]
+    # inputs = {k: v.to(model.device) for k, v in inputs.items()}
+    start_time = time.perf_counter()
+    for _ in range (ttft_times):
+        model.generate(
+            **inputs,
+            max_new_tokens=1,
+            pad_token_id=tokenizer.eos_token_id,
+            eos_token_id=tokenizer.eos_token_id,
+        )
+    first_token_time = time.perf_counter()
+    ttft = (first_token_time - start_time) / ttft_times
+
+    start_time = time.perf_counter()
+    with torch.no_grad():
+        outputs = model.generate(
+            **inputs,
+            max_new_tokens=max_new_tokens,
+            pad_token_id=tokenizer.eos_token_id,
+            eos_token_id=tokenizer.eos_token_id,
+        )
+    finish_time = time.perf_counter()
+    num_tokens = outputs[0].shape[0] - inputs_len
+    total_time = finish_time - start_time
+    if num_tokens > 1:
+        tpot = (total_time - ttft) / (num_tokens - 1)
+    else: tpot = 0
+    return {
+        'ttft': ttft, 'tpot': tpot,
+        'total_time': total_time,
+        'num_tokens': num_tokens,
+    }

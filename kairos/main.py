@@ -4,15 +4,14 @@ from utils.color_print import *
 from utils.ppl_eval import eval
 from utils.command_parser import parser
 from utils.util import save_json, load_json, save_text
-from utils.perf_eval import InferModel, mem_monitor, timer, empty_cache, reset_peak_memory_stats, max_memory_allocated
+from utils.perf_eval import InferModel, mem_monitor, eval_perf, empty_cache, reset_peak_memory_stats, max_memory_allocated
 from utils.calibration import get_calibration_set, generate_random_token_sequence
 from utils.global_config import model_path_llama, model_path_qwen2, device, quant_strategy
 from kairos.quant_model import quantize_model
 from kairos.smooth_scale import smooth_scale, apply_scale
-from utils.load_model import load_from_pretrained, load_model_tokenizer
+from utils.load_model import load_model_tokenizer
 from kairos.perf_profiler import Profiler
 from kairos.dynamic_linear import DynamicLinear
-from eval.perf_wiki2 import eval_perf
 
 # Check Device
 if device != 'cuda':
