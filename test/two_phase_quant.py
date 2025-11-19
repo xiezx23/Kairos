@@ -1,7 +1,7 @@
 import torch
 import time
 from utils.color_print import color_text
-from edq.quantization import *
+from kairos.quantization import *
 import edq_cuda_accel
 import awq_backend
 from utils.perf_eval import timer

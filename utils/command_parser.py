@@ -15,7 +15,5 @@ parser.add_argument("--enable_scale", type=bool, default=False,
                     help="Enable scaling or not.")
 parser.add_argument("--dump_calibration", type=bool, default=False, 
                     help="Whether to dump calibration data.")
-parser.add_argument("--test_case", type=str, default='batch_decode',
-                    help="Test the prefill or batch_decode phase")
 parser.add_argument("--quant_type", type=str, default=None,
-                    help="Quant Type: 'W8A8Linear', 'W4A16Linear', 'W4A8Linear', 'DynamicLinear'")
+    help="Quant Type: 'W8A8Linear', 'W4A16Linear', 'W4A8Linear', 'DynamicLinear'")

@@ -6,7 +6,7 @@ import torch
 from contextlib import contextmanager
 from utils.calibration import generate_random_token_sequence
 from utils.color_print import *
-from edq.kv_cache import CacheManager, QuantCacheManager
+from kairos.kv_cache import CacheManager, QuantCacheManager
 
 if torch.cuda.is_available():
     device = 'cuda'
@@ -62,7 +62,7 @@ class ProfilingTextStreamer(TextStreamer):
         self.prefill_flag = True
     
     def put(self, token_ids):
-        if self.token_count == 0:    # 第一次输入的数据是prompt
+        if self.token_count == 0:
             self.prompt_len = token_ids.shape[-1]
         else:
             if self.prefill_flag:
@@ -128,17 +128,18 @@ class InferModel():
         else:
             ttft = total_time * 1000
         if actual_tokens > 1:
-            tpot = ((total_time - (self.streamer.first_token_time - begin_time)) / (actual_tokens - 1)) * 1000  # 毫秒/token
+            tpot = ((total_time - (self.streamer.first_token_time - begin_time)) /
+                     (actual_tokens - 1)) * 1000  # ms/token
         elif actual_tokens == 1:
             tpot = 0 
         else:
             tpot = float('nan')
-        # 输出性能报告
+        # Output Performance Report
         print(gre_prefix+"------PERFORMANCE REPORT------"+default_color)
-        print(f"prompt长度:      {self.streamer.prompt_len} token")
-        print(f"峰值显存占用:    {peak_mem_gb:.2f} GB")
-        print(f"总生成时间:      {total_time:.2f} s")
-        print(f"实际生成token数: {actual_tokens}")
+        print(f"Prompt Length:   {self.streamer.prompt_len}")
+        print(f"Peak Mem. Usage: {peak_mem_gb:.2f} GB")
+        print(f"Total Exe. Time: {total_time:.2f} s")
+        print(f"Output Token Num:{actual_tokens}")
         print(f"TTFT:            {ttft:.2f} ms")
         print(f"TPOT:            {tpot:.2f} ms/token")
         print(gre_prefix+"------------------------------"+default_color)

@@ -21,7 +21,7 @@ import torch
 import torch.nn as nn
 from QQQ._CUDA import qqq_gemm
 import edq_cuda_accel
-from edq.quantization import *
+from kairos.quantization import *
 
 
 logger = getLogger(__name__)

@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
-from edq.quantization import *
+from kairos.quantization import *
 from utils.command_parser import parser
 from utils.perf_eval import timer
 from utils.color_print import *
@@ -10,8 +10,8 @@ from thirdparty.AWQ.w4a16_linear import W4A16Linear_AWQ
 from thirdparty.AutoGPTQ.w4a16_linear import W4A16Linear_Marlin
 from thirdparty.Qserve.w4a8_linear import W4A8Linear
 from thirdparty.QQQ.w4a8_linear import W4A8Linear_QQQ
-from edq.dynamic_linear import DynamicLinear
-from edq.perf_profiler import Profiler
+from kairos.dynamic_linear import DynamicLinear
+from kairos.perf_profiler import Profiler
 
 
 torch.manual_seed(seed=10)
