@@ -1,9 +1,7 @@
 import torch
 import kairos_cuda_accel
 import awq_backend
-import torch.cuda.nvtx as nvtx
 from utils.color_print import *
-from utils.perf_eval import timer
 from kairos.quantization import (quantize_tensor_int8, pack_int4_data, dequantize_tensor_int4, real_quantize_tensor_kairos)
 from thirdparty.AWQ.awq_method import pack_int_awq, trans_qfactor_layout_awq, dequantize_tensor_awq, quant_weight_awq
 

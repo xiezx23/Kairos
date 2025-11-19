@@ -3,7 +3,11 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
+<<<<<<< HEAD
 name = "kairos"
+=======
+name = "kairos"
+>>>>>>> main
 version = "0.1.1"
 description = "An efficient quantization(INT4/8) method for LLMs on edge device."
 readme = "README.md"

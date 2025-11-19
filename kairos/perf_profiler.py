@@ -86,22 +86,6 @@ def test_perf(proj_name, K, N, bias):
     torchLinear   = torch.nn.Linear(in_features=K, out_features=N, bias=bias, dtype=torch.float16).cuda()
     dlinear  = DynamicLinear.from_module(torchLinear, 'cuda')
     input_len = [i for i in range(1, 16, 1)] + [i for i in range(16, 2048, 32)] + [i for i in range(2048, 1024*16, 2048)] 
-    # input_len = [128, 512, 1024, 2048, 4096, 1024*8, 1024*16]
-    # input_len = [1024*8, 1024*16, 1024*32]
-    # input_len = [1, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16*1024, 32*1024]
-    # A = 32; B = 128; C = 1024; D = 4*1024
-    # input_len = \
-    #     [i for i in range(1, A, 1)] + \
-    #     [i for i in range(A, B, 2)] + \
-    #     [i for i in range(B, C, 16)] + \
-    #     [i for i in range(C, D, 64)]
-    # A = 1024; B = 4096; C = 16*1024; D = 48*1024; E = 128*1024
-    # input_len = \
-    #     [i for i in range(1, A, 128)] + \
-    #     [i for i in range(A, B, 256)] + \
-    #     [i for i in range(B, C, 512)] + \
-    #     [i for i in range(C, D, 1024)] + \
-    #     [i for i in range(D, E, 2024)]
 
     n = 100
     DL_type_list =  ['Dlinear  FP16', 'Dlinear W4A16', 'Dlinear W4A16', 'Dlinear  W8A8']
@@ -171,18 +155,6 @@ def test_perf(proj_name, K, N, bias):
     if print_flag: print('#' * 30)
     return seg_perf_list
     plt.figure()
-    # =============    ===============================
-    # character        color
-    # =============    ===============================
-    # ``'b'``          blue
-    # ``'g'``          green
-    # ``'r'``          red
-    # ``'c'``          cyan
-    # ``'m'``          magenta
-    # ``'y'``          yellow
-    # ``'k'``          black
-    # ``'w'``          white
-    # =============    ===============================
     def showAll():
         plt.plot(input_len, recordList[0], color = 'r')
         plt.plot(input_len, recordList[1], color = 'g')
@@ -190,15 +162,6 @@ def test_perf(proj_name, K, N, bias):
         plt.plot(input_len, recordList[3], color = 'm')
         # plt.plot(input_len, recordList[4], color = 'y')
         # plt.plot(input_len, recordList[5], color = 'k')
-    def showByQuantConfig():
-        plt.title(f'K:{K}, N:{N}')
-        w4a16_lat = min(recordList[2], recordList[3])
-        w8a8_lat = min(recordList[4], recordList[5])
-        plt.plot(input_len, recordList[0], color = 'r', label = 'fp16')
-        plt.plot(input_len, recordList[1], color = 'g', label = 'w4a8')
-        plt.plot(input_len, w4a16_lat, color = 'y', label = 'w4a16')
-        plt.plot(input_len, w8a8_lat, color = 'k', label = 'w8a8')
-        plt.legend()
     showAll()
     plt.xlabel('m')
     plt.ylabel('latency')
@@ -206,25 +169,6 @@ def test_perf(proj_name, K, N, bias):
     plt.grid(True)
     
 if __name__ == '__main__':
-
-    # for m in [i for i in range(1, 1000, 100)]:
-    #     r = m
-    #     ref_lut.record(r, m)
-    #     cpp_lut.record(r, m)
-    # l = 20
-    # m_list = [random.randint(1, 1024*6) for _ in range(l)]
-    # for m in m_list:
-    #     c1 = ref_lut.get(m)
-    #     c2 = cpp_lut.get(m)
-    #     assert c1 == c2, print(c1, c2)
-
-    # with timer('PY__LUT', n=l):
-    #     for m in m_list:
-    #         ref_lut.get(m)
-    # with timer('CPP_LUT', n=l):
-    #     for m in m_list:
-    #         cpp_lut.get(m)
-
     prof = Profiler()
     prof.profiling()
     prof.save()

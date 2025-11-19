@@ -154,7 +154,11 @@ struct FmhaBwdMainloopTmaWarpSpecialized {
   using SmemLayoutDQ = SmemLayoutDQ_1;
 
 
+<<<<<<< HEAD
+  using PipelineDQ = cutlass::PipelineAsync<2>;
+=======
   using Pipelinkairos = cutlass::PipelineAsync<2>;
+>>>>>>> main
 
   
   using SmemLayoutDS_0 = decltype(unstageSmemLayout(typename CollectiveMmaMD::SmemLayoutA{}, Int<NumMmaWarpGroups>{}));
