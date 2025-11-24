@@ -10,7 +10,7 @@ from transformers.models.qwen2.modeling_qwen2 import Qwen2DecoderLayer, Qwen2RMS
 
 from  utils.color_print import *
 from utils.global_config import quant_strategy
-from kairos.simu_quant import SimuQuantLinear, RealQuantLinearWithScale
+from kairos.simu_quant import RealQuantLinearWithScale
 from kairos.quant_config import LinearQuantConfig
 from kairos.quant_model import set_op_by_name, get_name_linears
 from kairos.catch_tensor import catch_embedding_output

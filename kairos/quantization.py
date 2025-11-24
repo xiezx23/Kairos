@@ -1,41 +1,4 @@
 import torch
-import time
-
-@torch.no_grad()
-def real_quantize_tensor_kairos(
-    w, n_bit=4, q_group_size=128):
-    org_w_shape = w.shape
-    if q_group_size > 0:
-    #     assert org_w_shape[-1] % q_group_size == 0
-        w = w.reshape(-1, q_group_size)
-    else:
-        w = w.reshape(-1, w.shape[-1])
-    max_val = w.amax(dim=1, keepdim=True)
-    min_val = w.amin(dim=1, keepdim=True)
-    max_int = 2**n_bit - 1
-    min_int = 0
-    scales = (max_val - min_val).clamp(min=1e-5) / max_int
-    # NOTE: AWQ employs an integer zero value, but this is suboptimal.
-    zeros = (-torch.round(min_val / scales)).clamp_(min_int, max_int)
-    (w.div_(scales).round_().add_(zeros)).clamp_(min_int, max_int)
-    # zeros = (-(min_val / scales))
-    # w.div_(scales).add_(zeros).round_().clamp_(0, max_int)
-    # assert torch.isnan(scales).sum() == 0
-    # assert torch.isnan(w).sum() == 0
-    # assert torch.isnan(w).sum() == 0
-    w = w.reshape(org_w_shape).to(dtype=torch.int32)
-    return w, scales.view(w.shape[0], -1), zeros.view(w.shape[0], -1)
-
-@torch.no_grad()
-def dequantize_tensor_kairos(weight, scales, scaled_zeros, group_size=128):
-    weight_shape = weight.shape
-    # assert weight_shape[-1] % group_size == 0
-    weight = weight.reshape(-1, group_size) 
-    weight = weight.to(torch.float16)
-    scales = scales.reshape(-1, 1)
-    scaled_zeros = scaled_zeros.reshape(-1, 1)
-    weight = weight.mul_(scales).add_(scaled_zeros).reshape(weight_shape)
-    return weight
 
 @torch.no_grad()    # per-tensor
 def quantize_tensor(x, bit = 8, q_type = 'S'):
@@ -198,44 +161,6 @@ def dequantize_tensor_int8(x, scale, q_type = 'S', zero_pt = None,
         x.mul_(scale)
     return x.reshape(x_shape)
 
-@torch.no_grad()
-def post_gemm_dequant(o, x, w, q_config_x, q_config_w):
-    o = o.to(torch.float32)
-    # assert q_config_w['q_type'] == 'S', \
-        # 'Only support dequantize to symmetric quantization of weight.'
-    # assert q_config_x['dim'] == 0 and q_config_w['dim'] == 1
-    if (q_config_x['q_type'] == 'S'):
-        o = o * q_config_x['scale'] * q_config_w['scale']
-    else:
-        d =  torch.cat(
-            [
-            w.to(torch.float32).sum(dim=0, keepdim=True) 
-            for _ in range(x.shape[0])
-            ], dim=0
-        )
-        o = (o - q_config_x['zero_pt'] * d) * q_config_x['scale'] * q_config_w['scale']
-    return o
-
-@torch.no_grad()
-def post_gemm_dequant(o, x, w, x_scale, w_scale, x_zero_pt = None):
-    # x_scale = x_scale.view(-1,1)
-    # w_scale = w_scale.view(1,-1)
-    w_scale = w_scale.T
-    o = o.to(torch.float32)
-    if 1:   # Symmetric Quantization
-        # print(o.shape)
-        # print(x_scale.shape)
-        # print(w_scale.shape)
-        o.mul_(x_scale).mul_(w_scale)
-    else:
-        d =  torch.cat(
-            [
-            w.to(torch.float32).sum(dim=0, keepdim=True) 
-            for _ in range(x.shape[0])
-            ], dim=0
-        )
-        o = (o - x_zero_pt * d) * x_scale * w_scale
-    return o
 
 @torch.no_grad()
 def simu_quantize_tensor(x, bit = 8, q_type = 'S', group_size = -1, return_dtype = torch.float16):
@@ -274,78 +199,6 @@ def simu_quantize_tensor(x, bit = 8, q_type = 'S', group_size = -1, return_dtype
         assert torch.isnan(qx).sum() == 0
         scale = scale.to(return_dtype)
         pqx = qx * scale
-    # Q_MAX = qx.max()
-    # Q_MIN = qx.min()
-    # print('qmax: {},  qmin: {},  groupSize: {}'.format(Q_MAX.item(), Q_MIN.item(), group_size))
-    return pqx.reshape(x_shape).to(torch.float16)
-
-@torch.no_grad()
-def simu_quantize_tensor_autoscale(x, bit = 8, q_type = 'S', group_size = -1):
-    """
-    dim         : 0:->per_token / 1->per_channel
-    group_size  : how many vector will share one scale and zero point.
-    with_scale  : scale on the other dim to smooth the data distribution.
-    """
-    assert q_type in ('A', 'S'), 'Illegal quantification config.'
-    dim = 0     # quantize by rows
-    x_shape = x.shape
-    x = x.reshape(-1, x_shape[-1])
-    # SCALE
-    max_ori_val = x.abs().amax(dim=dim)
-    total_max_ori_val = x.abs().amax().item()
-    smooth_scale = total_max_ori_val / max_ori_val
-    x = x * smooth_scale
-    # RESHAPE FOR GROUP QUANTIZE
-    assert group_size < 0 or x.shape[-1] % group_size == 0, print(x.shape)
-    max_int = 2**(bit-1) - 1
-    if group_size > 0:
-        x = x.reshape(-1, group_size)
-    x = x.to(torch.float32)
-    # QUANTIZATION
-    max_int = 2**(bit-1) - 1
-    if q_type == 'A':
-        max_val = x.amax(dim=(1^dim), keepdim=True)
-        min_val = x.amin(dim=(1^dim), keepdim=True)
-        scale   = (max_val-min_val).clamp(min=1e-7) / 2 / max_int
-        zero_pt = -torch.round((max_val+min_val) / 2 / scale)
-        qx = torch.round(x / scale) + zero_pt
-        qx = qx.clamp(min = -max_int, max = max_int)
-        assert torch.isnan(qx).sum() == 0
-        pqx = (qx - zero_pt) * scale
-    else:
-        max_val = x.abs().amax(dim=(1^dim), keepdim=True)
-        scale   = (max_val / max_int).clamp(min=1e-7)
-        qx = torch.round(input=x / scale)
-        qx = qx.clamp(min = -max_int, max = max_int)
-        assert torch.isnan(qx).sum() == 0
-        pqx = qx * scale
-    # Q_MAX = qx.max()
-    # Q_MIN = qx.min()
-    # print('qmax: {},  qmin: {},  groupSize: {}'.format(Q_MAX.item(), Q_MIN.item(), group_size))
-    return pqx.reshape(x_shape).to(torch.float16).div_(smooth_scale)
-
-@torch.no_grad()
-def simu_quantize_weight_mix_precsion(x, acti_max_row, bit = (4, 4), q_type = 'S', group_size = -1):
-    """
-    acti_max_row: the abs average value in column of Activation.
-    dim         : 0:->per_token / 1->per_channel.
-    group_size  : how many vector will share one scale and zero point.
-    with_scale  : scale on the other dim to smooth the data distribution.
-    """
-    assert x.dim() == 2
-    assert q_type in ('A', 'S'), 'Illegal quantification config.'
-    dim = 0     # quantize by rows
-    x_shape = x.shape
-    # SCALE
-    high_precision_rate = 0.01
-    high_precision_num = max(round(x.shape[-1]*high_precision_rate), 1)
-    selected_idx = acti_max_row.topk(high_precision_num).indices
-
-    hpw = x[:,selected_idx].clone()
-    x[:,selected_idx] = 0
-    hpw = simu_quantize_tensor(hpw, bit = bit[0], q_type=q_type)
-    pqx = simu_quantize_tensor(x, bit = bit[1], q_type=q_type, group_size=group_size)
-    pqx[:,selected_idx] = hpw
     # Q_MAX = qx.max()
     # Q_MIN = qx.min()
     # print('qmax: {},  qmin: {},  groupSize: {}'.format(Q_MAX.item(), Q_MIN.item(), group_size))

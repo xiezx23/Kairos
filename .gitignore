@@ -21,3 +21,5 @@ data/*
 
 !calibration_qwen.pt
 !calibration_llama.pt
+!prof_llama/*
+!prof_qwen/*

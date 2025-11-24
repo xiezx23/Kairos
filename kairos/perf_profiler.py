@@ -10,8 +10,11 @@ from utils.perf_eval import timer
 from kairos.quantization import *
 from kairos.dynamic_linear import DynamicLinear, COMP_TYPE_NAME
 
+# COMP_TYPE_NAME = {'w4a16_gemm':0, 'w4a16_gemv':1, 'w8a8':2, \
+#                   'w8a16_gemm':3, 'w8a16_gemv':4, 'fp16':5}     # W8A16 strategy is never used
+
 torch.manual_seed(seed=10)
-print_flag = True
+# print_flag = True
 print_flag = False
 
 try:
@@ -82,28 +85,29 @@ class Profiler:
  
 @torch.no_grad
 def test_perf(proj_name, K, N, bias):
-    # M = 1024 + 1
-    torchLinear   = torch.nn.Linear(in_features=K, out_features=N, bias=bias, dtype=torch.float16).cuda()
+    torchLinear = torch.nn.Linear(in_features=K, out_features=N, bias=bias, dtype=torch.float16).cuda()
     dlinear  = DynamicLinear.from_module(torchLinear, 'cuda')
-    input_len = [i for i in range(1, 16, 1)] + [i for i in range(16, 2048, 32)] + [i for i in range(2048, 1024*16, 2048)] 
+    # Input Dimension M Sampling
+    input_len = \
+        [i for i in range(1, 16, 1)] + \
+        [i for i in range(16, 2048, 32)] + \
+        [i for i in range(2048, 1024*16, 2048)] 
 
-    n = 100
-    DL_type_list =  ['Dlinear  FP16', 'Dlinear W4A16', 'Dlinear W4A16', 'Dlinear  W8A8']
+    n = 100 # Calculate the average performance of n executions.
+    type_name_list = ['Dlinear  FP16', 'Dlinear W4A16', 'Dlinear W4A16', 'Dlinear  W8A8']
     comp_type_list = ['fp16', 'w4a16_gemm', 'w4a16_gemv', 'w8a8']
 
     # Preheat Kernels
     preheat_time = 20
     for m in [1, 16, 1024, 2048, 4096]:
-        # Create input matrices
         input_tensor = torch.randn((m, K), dtype=torch.float16, device = 'cuda')
         for comp_type in comp_type_list:
             if m > 32 and 'gemv' in comp_type: continue
             for _ in range(preheat_time):
                 out = dlinear._forward(input_tensor, m, COMP_TYPE_NAME[comp_type])
-            
 
     recordList = [[] for _ in range(len(comp_type_list))]
-    perf_list = []  # record the best comp_type of m.
+    perf_list = []  # record the best comp_type for each m.
     for midx in tqdm.tqdm(range(len(input_len)), desc=f"Test Perf. for {proj_name}"):
         m = input_len[midx]
         if print_flag:
@@ -118,7 +122,7 @@ def test_perf(proj_name, K, N, bias):
             comp_type = comp_type_list[i]
             if m > 32 and 'gemv' in comp_type: continue
             torch.cuda.empty_cache()
-            with timer(DL_type_list[i], n=n, recordList=recordList[i], print_flag=print_flag):
+            with timer(type_name_list[i], n=n, recordList=recordList[i], print_flag=print_flag):
                 for _ in range(n):
                     out = dlinear._forward(input_tensor, m, COMP_TYPE_NAME[comp_type])
             if best_t > recordList[i][-1]:
@@ -154,19 +158,6 @@ def test_perf(proj_name, K, N, bias):
     print('-' * 30)
     if print_flag: print('#' * 30)
     return seg_perf_list
-    plt.figure()
-    def showAll():
-        plt.plot(input_len, recordList[0], color = 'r')
-        plt.plot(input_len, recordList[1], color = 'g')
-        plt.plot(input_len, recordList[2], color = 'c')
-        plt.plot(input_len, recordList[3], color = 'm')
-        # plt.plot(input_len, recordList[4], color = 'y')
-        # plt.plot(input_len, recordList[5], color = 'k')
-    showAll()
-    plt.xlabel('m')
-    plt.ylabel('latency')
-    # plt.xticks(input_len)
-    plt.grid(True)
     
 if __name__ == '__main__':
     prof = Profiler()
