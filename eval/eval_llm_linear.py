@@ -61,7 +61,7 @@ def test(proj_name, K, N, bias):
     qlinear_w8a8_awq     = W8A8Linear.from_module(torchLinear, 'cuda', backend='awq')
     dlinear  = DynamicLinear.from_module(torchLinear, 'cuda')
 
-    print_flag = False
+    print_flag = True
     linear_list = [torchLinear, qlinear_w4a8_qserve, qlinear_w4a8_qqq, qlinear_w4a16_awq, qlinear_w4a16_marlin, qlinear_w8a8_awq, dlinear]
 
     # Preheat Kernels
@@ -88,14 +88,14 @@ def test(proj_name, K, N, bias):
                     out = linear_list[i](input_tensor)
         if print_flag:
             currecordList = [recordList[i][-1] for i in range(len(linear_list))]
-            fastest_kid = np.argmin(currecordList)
-            print(color_text('gre', 'BestKernel: '+kernel_name_list[fastest_kid]))
+            # fastest_kid = np.argmin(currecordList)
+            # print(color_text('gre', 'BestKernel: '+kernel_name_list[fastest_kid]))
             w4a16_fastest = min(currecordList[3], currecordList[4])
             accel_r = (w4a16_fastest) / currecordList[6]
-            print(color_text('gre', f'Accel Ratio to SOTA W4A16: {accel_r:.2f}'))
+            # print(color_text('gre', f'Accel Ratio to SOTA W4A16: {accel_r:.2f}'))
             w4a8_fastest = min(currecordList[1], currecordList[2])
             accel_r = (w4a8_fastest) / currecordList[6]
-            print(color_text('gre', f'Accel Ratio to SOTA W4A8 : {accel_r:.2f}'))
+            # print(color_text('gre', f'Accel Ratio to SOTA W4A8 : {accel_r:.2f}'))
             print('=' * 30)
     for i in range(len(kernel_name_list)):
         record[i].append(recordList[i])
@@ -150,8 +150,8 @@ if __name__ == '__main__':
         acc_to_fp16 =   currecordList[0]/currecordList[6]; record_acc_fp16.append(acc_to_fp16) 
         # print(color_text('gre', f'Accel Ratio to Marlin      : {acc_to_marlin:.2f}'))
         # print(color_text('gre', f'Accel Ratio to AWQ(W4A16)  : {acc_to_awq:.2f}'))
-        # print(color_text('gre', f'Accel Ratio to Qserve(W4A8): {acc_to_qserve:.2f}'))
-        # print(color_text('gre', f'Accel Ratio to Full prec.  : {acc_to_fp16:.2f}'))
+        print(color_text('gre', f'Accel Ratio to Qserve(W4A8): {acc_to_qserve:.2f}'))
+        print(color_text('gre', f'Accel Ratio to Full prec.  : {acc_to_fp16:.2f}'))
         print('=' * 30)
     print('=' * 30)
     print("FINAL REPORT")

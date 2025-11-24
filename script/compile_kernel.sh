@@ -8,7 +8,7 @@ cd thirdparty/AWQ/kernels
 python setup.py install
 cd ../../..
 
-cd thirdparty/QQQ/kernels
+cd thirdparty/Qserve/qserve_kernels
 python setup.py install
 cd ../../..
 
