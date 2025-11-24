@@ -26,7 +26,12 @@ pip install --extra-index-url https://mirrors.nju.edu.cn/pytorch/whl/cu126 torch
 pip install -e .
 ```
 
-2. Compile CUDA Kernels
+2. Install CUDA 12.6
+```
+conda install -c "nvidia/label/cuda-12.6.0" cuda-toolkit
+```
+
+3. Compile CUDA Kernels
 
 ```
 sh script/compile_kernel.sh
