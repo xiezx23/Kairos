@@ -10,7 +10,7 @@ from transformers.models.qwen2.modeling_qwen2 import Qwen2DecoderLayer, Qwen2RMS
 
 from  utils.color_print import *
 from utils.global_config import quant_strategy
-from kairos.simu_quant import SimuQuantLinear, RealQuantLinearWithScale
+from kairos.simu_quant import RealQuantLinearWithScale
 from kairos.quant_config import LinearQuantConfig
 from kairos.quant_model import set_op_by_name, get_name_linears
 from kairos.catch_tensor import catch_embedding_output
@@ -129,8 +129,7 @@ def smooth_scale_layer(layer, layer_kwargs, activations):
 
 @torch.no_grad()
 def smooth_scale(model, inputs):
-    decoderLayers = model.model.layers  # Qwen2.5 7B 是28层堆叠的Qwen2DecoderLayer
-    # 捕获embedding层的输出
+    decoderLayers = model.model.layers
     embed_output, layer_kwargs = catch_embedding_output(model, inputs)
     
     if "use_cache" in layer_kwargs:

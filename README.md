@@ -12,9 +12,9 @@ The profiler explores the quantization strategy to construct a lookup table for 
 The converter converts the weights and activations based on the given quantization strategy.
 
 ## Install
-1. Install Package
+Install environment
 
-Install Package for CUDA Device
+1. Install Package for CUDA Device
     `CUDA12.6 + torch2.6`
 
 ```
@@ -26,13 +26,7 @@ pip install --extra-index-url https://mirrors.nju.edu.cn/pytorch/whl/cu126 torch
 pip install -e .
 ```
 
-3. Get the Model and Calibration Dataset
-
-```
-python -m utils.download
-```
-
-4. Compile CUDA Kernels
+2. Compile CUDA Kernels
 
 ```
 sh script/compile_kernel.sh
@@ -51,11 +45,6 @@ Speedup of Linear Layers Evaluation
 ```
 bash script/end2end_latency.sh
 ```
-
-## Evaluation
-
-Please refer to [eval/README.md](eval/README.md) for evaluation.
-The evaluation result is here: [eval/Result.md](eval/Result.md).
 
 ## Performance
 Kairos provides 1.57×, and 1.63× speedups on average for LLaMa-3 8B, and 1.47×, and 1.61× speedups on average for Qwen2.5 7B A100 GPU, compared with SOTA W4A16 method MARLIN and W4A8 method Qserve, respectively.

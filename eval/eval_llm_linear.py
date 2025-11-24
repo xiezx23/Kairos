@@ -61,7 +61,7 @@ def test(proj_name, K, N, bias):
     qlinear_w8a8_awq     = W8A8Linear.from_module(torchLinear, 'cuda', backend='awq')
     dlinear  = DynamicLinear.from_module(torchLinear, 'cuda')
 
-    print_flag = True
+    print_flag = False
     linear_list = [torchLinear, qlinear_w4a8_qserve, qlinear_w4a8_qqq, qlinear_w4a16_awq, qlinear_w4a16_marlin, qlinear_w8a8_awq, dlinear]
 
     # Preheat Kernels
@@ -143,18 +143,15 @@ if __name__ == '__main__':
             print(f'{kernel_name_list[j]} :  {sum_lat_list[j][i]:.4f} ms')
         currecordList = [sum_lat_list[x][i] for x in range(len(kernel_name_list))]
         fastest_kid = np.argmin(currecordList)
-        print(color_text('gre', 'BestKernel: '+kernel_name_list[fastest_kid]))
-        # w4_fastest = min(currecordList[1], currecordList[2], currecordList[3], currecordList[4])
-        # accel_r = (w4_fastest-currecordList[6]) / w4_fastest
-        # print(color_text('gre', f'Accel Ratio to SOTA INT4   : {accel_r:.2f}'))
+        # print(color_text('gre', 'BestKernel: '+kernel_name_list[fastest_kid]))
         acc_to_marlin = currecordList[4]/currecordList[6]; record_acc_marlin.append(acc_to_marlin) 
         acc_to_awq =    currecordList[3]/currecordList[6]; record_acc_awq.append(acc_to_awq) 
         acc_to_qserve = currecordList[1]/currecordList[6]; record_acc_qserve.append(acc_to_qserve) 
         acc_to_fp16 =   currecordList[0]/currecordList[6]; record_acc_fp16.append(acc_to_fp16) 
-        print(color_text('gre', f'Accel Ratio to Marlin      : {acc_to_marlin:.2f}'))
-        print(color_text('gre', f'Accel Ratio to AWQ(W4A16)  : {acc_to_awq:.2f}'))
-        print(color_text('gre', f'Accel Ratio to Qserve(W4A8): {acc_to_qserve:.2f}'))
-        print(color_text('gre', f'Accel Ratio to Full prec.  : {acc_to_fp16:.2f}'))
+        # print(color_text('gre', f'Accel Ratio to Marlin      : {acc_to_marlin:.2f}'))
+        # print(color_text('gre', f'Accel Ratio to AWQ(W4A16)  : {acc_to_awq:.2f}'))
+        # print(color_text('gre', f'Accel Ratio to Qserve(W4A8): {acc_to_qserve:.2f}'))
+        # print(color_text('gre', f'Accel Ratio to Full prec.  : {acc_to_fp16:.2f}'))
         print('=' * 30)
     print('=' * 30)
     print("FINAL REPORT")
@@ -231,9 +228,6 @@ if __name__ == '__main__':
     # exit(0)
 
     exit(0)
-    
-    # for i in range(len(sum_lat_list)):
-    #     sum_lat_list[i] = sum_lat_list[i][0:7]
 
     for j in range(len(sum_lat_list)):
         print(f'{kernel_name_list[j]} ', end='')

@@ -16,3 +16,5 @@ echo W4A16Linear_Marlin | python -m kairos.main --model_type qwen > log/end2end/
 echo W4A8Linear | python -m kairos.main --model_type qwen > log/end2end/W4A8Linear_qwen.log
 echo W4A8Linear_QQQ | python -m kairos.main --model_type qwen > log/end2end/W4A8Linear_QQQ_qwen.log
 echo DynamicLinear | python -m kairos.main --model_type qwen > log/end2end/DynamicLinear_qwen.log
+
+python eval/show_end2end.py
