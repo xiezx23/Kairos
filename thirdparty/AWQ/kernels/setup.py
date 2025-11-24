@@ -41,11 +41,7 @@ setup(
                 "csrc/w8a8/act.cu",
                 "csrc/w8a8/layernorm.cu",
 
-<<<<<<< HEAD
                 "csrc/dequant_kairos/deq_i4_to_f16.cu"
-=======
-                "csrc/dequant_kairos/deq_i4_to_f16.cu"
->>>>>>> main
 
             ],
             extra_compile_args=extra_compile_args,
