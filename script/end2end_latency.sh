@@ -1,3 +1,6 @@
+mkdir log/
+mkdir log/end2end/
+
 echo Test LLaMa-3-8B
 echo None | python -m kairos.main --model_type llama --full 1 > log/end2end/None_llama.log
 echo W8A8Linear | python -m kairos.main --model_type llama > log/end2end/W8A8Linear_llama.log

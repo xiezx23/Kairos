@@ -23,7 +23,10 @@ conda activate kairos
 pip install --upgrade pip
 # pip install --extra-index-url https://download.pytorch.org/whl/cu126 torch==2.6.0
 pip install --extra-index-url https://mirrors.nju.edu.cn/pytorch/whl/cu126 torch==2.6.0
+cd Kairos
 pip install -e .
+cd thirdparty
+git clone https://github.com/IST-DASLab/marlin.git
 ```
 
 2. Install CUDA 12.6
