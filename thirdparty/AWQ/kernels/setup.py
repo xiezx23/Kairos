@@ -40,9 +40,6 @@ setup(
                 "csrc/w8a8/quantization.cu",
                 "csrc/w8a8/act.cu",
                 "csrc/w8a8/layernorm.cu",
-
-                "csrc/dequant_kairos/deq_i4_to_f16.cu"
-
             ],
             extra_compile_args=extra_compile_args,
             include_dirs=[

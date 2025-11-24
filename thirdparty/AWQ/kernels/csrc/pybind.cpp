@@ -13,13 +13,6 @@
 #include "w8a8/layernorm.h"
 #include "w8a8/act.h"
 
-<<<<<<< HEAD
-#include "dequant_kairos/deq_i4_to_f16.h"
-=======
-#include "dequant_kairos/deq_i4_to_f16.h"
->>>>>>> main
-
-
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m)
 {   
@@ -30,6 +23,4 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m)
     m.def("w8a8_gemm_forward_cuda", &w8a8_gemm_forward_cuda, "our w8a8 gemm kernel");
     m.def("w8a8_gemm_fuse_bias_forward_cuda", &w8a8_gemm_fuse_bias_forward_cuda, "our w8a8 gemm fused bias kernel");
     m.def("invoke_quant", &invoke_quant, "fp16->int8 quantization");
-
-    m.def("dequantize_i4_to_f16_cuda", &dequantize_i4_to_f16_cuda, "dequantize_i4_to_f16_cuda");
 }
