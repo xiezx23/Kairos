@@ -10,10 +10,10 @@ from kairos.quant_model import get_name_linears
 def catch_embedding_output(model, inputs):
     model.model.rotary_emb   = model.model.rotary_emb.to('cuda')
     model.model.embed_tokens = model.model.embed_tokens.to('cuda')
-    decoderLayers = model.model.layers  # Qwen2.5 7B 是28层堆叠的Qwen2DecoderLayer
+    decoderLayers = model.model.layers
     embed_output = []
     layer_kwargs = {}
-    def pre_forward_hook(module, args, kwargs): # 在执行forward之前先截取数据
+    def pre_forward_hook(module, args, kwargs):
         embed_output.append(args[0])
         layer_kwargs.update(kwargs)
         raise ValueError
@@ -31,11 +31,9 @@ def catch_embedding_output(model, inputs):
 
 @torch.no_grad()
 def catch_activation(model, tokenizer, inputs):
-    decoderLayers = model.model.layers  # Qwen2.5 7B 是28层堆叠的Qwen2DecoderLayer
+    decoderLayers = model.model.layers
     model.cuda()
-    # 捕获embedding层的输出
     embed_output, layer_kwargs = catch_embedding_output(model, inputs)
-    # 捕获每个线性层的输入激活
     activations = defaultdict(list)
     acti_max_distri = {}
     inputs = embed_output[0]
@@ -48,7 +46,6 @@ def catch_activation(model, tokenizer, inputs):
             x = input[0]
             # assert x.dim() == 3 # shape(batch_size, ids_len, hidden_size)
             acti_dict[linear_name].append(x.cpu())
-            # 获取列上的最值，并在batch间取mean
             max_in_col = x.abs().max(dim=1).mean(dim=0, keepdim=False)
             max_dist[linear_name+str(layer_idx)] = (max_in_col)
 

@@ -1,5 +1,3 @@
-// Author: Zexi Xie.
-
 #include <ATen/ATen.h>
 #include <ATen/cuda/CUDAContext.h>
 #include <cuda_fp16.h>
@@ -28,7 +26,6 @@ __device__ __forceinline__ void uint4_to_fp16(
     out2 = out.y;
 }
 
-// 使用向量化加载以提高内存访问效率
 __device__ __forceinline__ uint2 load_uint2(const uint8_t* ptr) {
     uint2 val;
     val.x = ptr[0];
@@ -36,7 +33,6 @@ __device__ __forceinline__ uint2 load_uint2(const uint8_t* ptr) {
     return val;
 }
 
-// 使用向量化存储以提高内存访问效率
 __device__ __forceinline__ void store_half2(__half* ptr, const __half2 val) {
     ptr[0] = val.x;
     ptr[1] = val.y;
@@ -65,8 +61,7 @@ __global__ void dequant_uint4_to_fp16_kernel(
     }
     __syncthreads();
     
-    // 每个线程处理多个元素（向量化处理）
-    const int elems_per_thread  = 32 / 4; // 每个线程处理8个输出元素
+    const int elems_per_thread  = 32 / 4; // each theard block -> 8 output elements
     const int solve_end         = K / elems_per_thread;
     for (int cur_tid = tid; cur_tid < solve_end; cur_tid += blockDim.x) {
         const int start_idx = cur_tid * elems_per_thread;
@@ -74,7 +69,7 @@ __global__ void dequant_uint4_to_fp16_kernel(
         const uint8_t* input_ptr = input + row * (K / 2);
         __half* output_ptr = output + row * K;
         for (int idx = start_idx; idx < end_idx; idx += 4) {
-            // if (idx + 3 >= K) {                          // 边界处理
+            // if (idx + 3 >= K) { 
             //     for (int i = idx; i < min(idx + 4, K); i++) {
             //         const int group_id = i / group_size;
             //         const __half s = shared_scale[group_id];

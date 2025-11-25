@@ -1,5 +1,3 @@
-// Author: Zexi Xie.
-
 #include <ATen/cuda/CUDAContext.h>
 #include <torch/extension.h>
 #include <cuda_fp16.h>
