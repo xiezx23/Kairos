@@ -1,5 +1,3 @@
-// Author: Zexi Xie.
-
 #include <torch/extension.h>
 #include <ATen/ATen.h>
 #include <ATen/cuda/CUDAContext.h>

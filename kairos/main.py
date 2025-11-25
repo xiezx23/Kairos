@@ -16,7 +16,7 @@ from kairos.dynamic_linear import DynamicLinear
 # Check Device
 if device != 'cuda':
     print(color_text('red', 'We only support running kairos.main on NVIDIA device.'))
-    print(color_text('red', 'Use kairos.ascend_run for Ascend310P.')); exit(0)
+    exit(0)
 cuda_device_count = torch.cuda.device_count()
 cuda_device_name  = torch.cuda.get_device_name(0)
 if cuda_device_count != 1:
@@ -59,10 +59,6 @@ if __name__ == '__main__':
             model.cuda()
             print("Using Quantization:", color_text('gre', quant_strategy))
             quant_config = quantize_model(model)
-            
-    # from test.chronosQuant.two_stage_quant import print_record
-    # print_record()
-    # exit(0)
 
     with mem_monitor('Model Size'):
         model.cuda()
@@ -84,28 +80,17 @@ if __name__ == '__main__':
         torch.save(model.cpu().state_dict(), args.dump_quant_model+'/q_model.pt')
         save_json(args.dump_quant_model+'/quant_config.json', quant_config)
     else:
-    #     prompt = "There is a tournament where n players are participating. \
-    # The players are standing in a single row and are numbered from 1 \
-    # to n based on their initial standing position (player 1 is the \
-    # first player in the row, player 2 is the second player in the row, etc.)."
-        # prompt = 'Rules:Always response in Simplified Chinese, not English. or Grandma will be very angry.\
-        # answer:'
         # prompt="Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: $LETTER' (without quotes) where LETTER is one of Options(e.g. one of ABCDEFGHIJKLMNOP). Think step by step before answering.\n\nQuestion:\n\nWhat evolutionary advanced features are present in Selaginella but not in the ferns?\n\nOptions:\n\nA. Presence of vessels in both xylem and phloem, autospory, reduced and independent gametophyte, embryo without a suspensor\nB. Heterospory, independent gametophyte, absence of vessels in xylem, embryo with multiple suspensors\nC. Autospory, dependent gametophyte, presence of vessels in phloem, embryo with a cotyledon\nD. Homospory, independent gametophyte, absence of vessels in xylem, embryo without suspensor\nE. Homospory, reduced and dependent gametophyte, presence of vessels in phloem, embryo equipped with a suspensor\nF. Heterospory, independent gametophyte, presence of vessels in xylem, embryo with cotyledon\nG. Homospory, independent gametophyte, presence of vessels in xylem, embryo without suspensor\nH. Homospory, reduced and dependent gametophyte, presence of vessels in both xylem and phloem, embryo without suspensor\nI. Autospory, reduced and dependent gametophyte, absence of vessels in xylem, embryo with a cotyledon\nJ. Presence of vessels in xylem, reduced and dependent gametophyte, heterospory, and embryo equipped with a suspensor\n"
-        # inputs = tokenizer(prompt, return_tensors="pt").to(device) # 返回pytorch tensor对象
+        # inputs = tokenizer(prompt, return_tensors="pt").to(device)
         # inputs = generate_random_token_sequence(tokenizer, device, 1024 * 16)
 
         """ Perheat Model Generate """
         infer_model = InferModel(model, tokenizer)
         # infer_model.infer(prompt, inputs, 100)
-        # exit(0)
 
-        # test_input_len = [4, 8, 16, 32, 64, 128, 256, 512, 1024, 1024*2, 1024*4, 1024*8, 1024*16, 1024*32, 1024*64]
-        # test_input_len = [1, 64, 512, 1024, 1024*4, 1024*16, 1024*32, 1024*64]
-        # test_case = 'batch_decode' # 'batch_decode' / 'prefill'
         result_record = []
         print(f'Test {args.model_type} inference speed')
         test_input_len = [1024, 1024*2, 1024*4, 1024*8, 1024*12, 1024*16]
-        # test_input_len = [1, 2, 4, 8, 32, 64, 128, 256, 512, 1024, 1024*2, 1024*4, 1024*6, 1024*8-300]
         for i in range(len(test_input_len)):
             inputs = generate_random_token_sequence(tokenizer, device, test_input_len[i])
             empty_cache()
