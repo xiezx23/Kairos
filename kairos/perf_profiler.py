@@ -88,23 +88,26 @@ def test_perf(proj_name, K, N, bias):
     torchLinear = torch.nn.Linear(in_features=K, out_features=N, bias=bias, dtype=torch.float16).cuda()
     dlinear  = DynamicLinear.from_module(torchLinear, 'cuda')
     # Input Dimension M Sampling
-    input_len = \
-        [i for i in range(1, 16, 1)] + \
-        [i for i in range(16, 2048, 32)] + \
-        [i for i in range(2048, 1024*16, 2048)] 
+    input_len = [1, 2, 4, 8, 16, 24, 32, 48, 64, 128, 256, 512] + \
+                [i for i in range(1024, 1024*8, 1024)] +\
+                [i for i in range(1024*8, 1024*32, 2048)] 
+    # input_len = \
+    #     [i for i in range(1, 16, 1)] + \
+    #     [i for i in range(16, 2048, 32)] + \
+    #     [i for i in range(2048, 1024*16, 1024)] 
 
-    n = 100 # Calculate the average performance of n executions.
+    n = 200 # Calculate the average performance of n executions.
     type_name_list = ['Dlinear  FP16', 'Dlinear W4A16', 'Dlinear W4A16', 'Dlinear  W8A8']
     comp_type_list = ['fp16', 'w4a16_gemm', 'w4a16_gemv', 'w8a8']
 
     # Preheat Kernels
     preheat_time = 20
-    for m in [1, 16, 1024, 2048, 4096]:
-        input_tensor = torch.randn((m, K), dtype=torch.float16, device = 'cuda')
-        for comp_type in comp_type_list:
-            if m > 32 and 'gemv' in comp_type: continue
-            for _ in range(preheat_time):
-                out = dlinear._forward(input_tensor, m, COMP_TYPE_NAME[comp_type])
+    # for m in [1, 16, 1024, 2048, 4096]:
+    #     input_tensor = torch.randn((m, K), dtype=torch.float16, device = 'cuda')
+    #     for comp_type in comp_type_list:
+    #         if m > 32 and 'gemv' in comp_type: continue
+    #         for _ in range(preheat_time):
+    #             out = dlinear._forward(input_tensor, m, COMP_TYPE_NAME[comp_type])
 
     recordList = [[] for _ in range(len(comp_type_list))]
     perf_list = []  # record the best comp_type for each m.
@@ -120,7 +123,12 @@ def test_perf(proj_name, K, N, bias):
         if print_flag: print('-' * 30)
         for i in range(len(comp_type_list)):
             comp_type = comp_type_list[i]
-            if m > 32 and 'gemv' in comp_type: continue
+            if m < 5 and 'gemm' in comp_type: continue
+            elif m < 8 and 'marlin' in comp_type: continue
+            elif m > 32 and 'gemv' in comp_type: continue
+            # Preheat Kernels
+            for _ in range(preheat_time):
+                out = dlinear._forward(input_tensor, m, COMP_TYPE_NAME[comp_type])
             torch.cuda.empty_cache()
             with timer(type_name_list[i], n=n, recordList=recordList[i], print_flag=print_flag):
                 for _ in range(n):
@@ -160,9 +168,9 @@ def test_perf(proj_name, K, N, bias):
     return seg_perf_list
     
 if __name__ == '__main__':
-    prof = Profiler()
+    prof = Profiler([(512, 3584), (3584, 3584), (3584, 18944), (18944, 3584)])
     prof.profiling()
-    prof.save()
+    # prof.save()
     # prof.load()
     l = 100
     m_list = [random.randint(1, 1024*6) for _ in range(l)]

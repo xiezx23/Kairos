@@ -52,7 +52,7 @@ class W8A8Linear(torch.nn.Module):
         awq_backend.w8a8_gemm_forward_cuda(int_x, self.weight, self.scale, scale_x, out)
         if self.bias is not None:
             out.add_(self.bias)
-        return out
+        return out.reshape(intput_shape[0], intput_shape[1], -1)
 
     def extra_repr(self) -> str:
         return f"in_features={self.in_features}, out_features={self.out_features}, bias={self.bias is not None}"

@@ -130,7 +130,7 @@ class W4A8Linear_QQQ(nn.Module):
         self.register_buffer(
             "B",
             torch.empty(
-                (self.infeatures // 16, self.outfeatures * 16 // 8), dtype=torch.int32
+                (self.infeatures // 16, self.outfeatures * 16 // 8), dtype=torch.int
             ),
         )
         self.register_buffer(

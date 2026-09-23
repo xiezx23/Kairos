@@ -64,7 +64,10 @@ class W4A16Linear_AWQ(torch.nn.Module):
     @torch.no_grad
     def forward(self, input:torch.Tensor) -> torch.Tensor:
         # input = input.to(torch.float16)
-        batch_token_len = input.numel() // input.shape[-1]
+        intput_shape = input.shape
+        input = input.reshape(-1, intput_shape[-1])
+        batch_token_len = input.shape[0]
+        # batch_token_len = input.numel() // input.shape[-1]
         if batch_token_len < 8:
             out = awq_backend.gemv_forward_cuda_new(
                 input, self.qweight, self.scales, self.scaled_zeros,
@@ -74,7 +77,8 @@ class W4A16Linear_AWQ(torch.nn.Module):
                 input, self.qweight, self.scales, self.scaled_zeros)
         if self.bias is not None:
             out.add_(self.bias)
-        return out
+        # if len(intput_shape) == 2: return out #DEBUG
+        return out.reshape(intput_shape[0], intput_shape[1], -1)
         # return out.to(self.return_dtype)
 
     def extra_repr(self) -> str:

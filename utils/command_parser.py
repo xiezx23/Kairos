@@ -3,7 +3,7 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument("--full", type=bool, default=False, 
                     help="Use full precision model or not.")
-parser.add_argument("--model_type", type=str, default='qwen', choices=['llama', 'qwen'], 
+parser.add_argument("--model_type", type=str, default='qwen', 
                     help="Model Type: qwen / llama")
 parser.add_argument("--load_quant_model", type=str, default=None, 
                     help="Path to load quantized model.")
@@ -17,3 +17,8 @@ parser.add_argument("--dump_calibration", type=bool, default=False,
                     help="Whether to dump calibration data.")
 parser.add_argument("--quant_type", type=str, default=None,
     help="Quant Type: 'W8A8Linear', 'W4A16Linear', 'W4A8Linear', 'DynamicLinear'")
+parser.add_argument("--version", type=str, default='2', 
+                    help="Use Kairos v1 or v2.")
+
+parser.add_argument("--test_type", type=str, default='batch', 
+                    help="Test varying sequence length or batch size")

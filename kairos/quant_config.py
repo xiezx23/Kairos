@@ -1,10 +1,17 @@
 import torch
-from kairos.dynamic_linear import DynamicLinear
 from thirdparty.SmoothQuant.w8a8_linear import W8A8Linear
 from thirdparty.Qserve.w4a8_linear import W4A8Linear
 from thirdparty.QQQ.w4a8_linear import W4A8Linear_QQQ
 from thirdparty.AWQ.w4a16_linear import W4A16Linear_AWQ
 from thirdparty.AutoGPTQ.w4a16_linear import W4A16Linear_Marlin
+
+
+from utils.command_parser import parser
+args = parser.parse_args()
+if args.version == '2':
+    from kairos.dynamic_linear_v2 import DynamicLinear
+else:
+    from kairos.dynamic_linear import DynamicLinear
 
 class TensorQuantConfig:
     @torch.no_grad

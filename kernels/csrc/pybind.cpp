@@ -20,5 +20,6 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m)
     m.def("dequant_int4_to_fp16", &dequant_int4_to_fp16, "Dequant_int4_to_float16 function");
     m.def("dequant_interleaved_int4_to_fp16", &dequant_interleaved_int4_to_fp16, "dequant_interleaved_int4_to_fp16");
     m.def("dequant_interleaved_int4_to_int8", &dequant_interleaved_int4_to_int8, "dequant_interleaved_int4_to_int8");
-    m.def("trans_layout_c16_to_c8", &trans_layout_c16_to_c8, "transformate layout of weight from W4A16 format to W4A8 format");
+    m.def("trans_layout_c16_to_c8_marlin", &trans_layout_c16_to_c8_marlin, "transformate layout of weight from W4A16 MARLIN format to W4A8 QQQ format");
+    m.def("trans_layout_c16_to_c8_awq", &trans_layout_c16_to_c8_awq, "transformate layout of weight from W4A16 AWQ format to W4A8 Qserve format");
 }

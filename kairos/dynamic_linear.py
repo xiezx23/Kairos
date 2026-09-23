@@ -117,12 +117,14 @@ class DynamicLinear(torch.nn.Module):
     
     @torch.no_grad
     def forward(self, input:torch.Tensor) -> torch.Tensor:
+        shape = input.shape
+        input = input.reshape(-1, shape[-1])
         m = input.shape[-2] # input.numel() // input.shape[-1]
         if m != self.pre_m:
             self.pre_m = m
             self.comp_type = DynamicLinear.prof.get_comp_type(self.shape, m)
             # print(f'{m}  {self.comp_type}')
-        return self._forward(input, m, self.comp_type)
+        return self._forward(input, m, self.comp_type).reshape(shape[0], shape[1], -1)
 
     @torch.no_grad
     # @torch.compile
@@ -162,7 +164,7 @@ class DynamicLinear(torch.nn.Module):
             out += self.bias
         """ CHECK CORRECTNESS REGION
         if torch.isnan(out).sum() > 0 or torch.isinf(out).sum() > 0:
-            print(self.name, comp_type, torch.isnan(out).sum(), out)
+            print(input.shape, comp_type, torch.isnan(out).sum(), out)
             exit(0)
         """
         return out

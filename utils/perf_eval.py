@@ -132,16 +132,79 @@ class InferModel():
         print(f"TPOT:            {tpot:.2f} ms/token")
         print(gre_prefix+"------------------------------"+default_color)
 
+
 @torch.no_grad
-def eval_perf(model, tokenizer, inputs, ttft_times=4, max_new_tokens=100):
+def eval_perf_v2(model, tokenizer, inputs, ttft_times=10, max_new_tokens=100):
+    
+    warmup_steps = 5
+    for _ in range(warmup_steps):
+        model.generate(
+            **inputs,
+            max_new_tokens=20,
+            max_length = None,
+            pad_token_id=tokenizer.eos_token_id,
+            eos_token_id=tokenizer.eos_token_id
+        )
+
+    start_prefill = time.perf_counter()
+    for _ in range(ttft_times):
+        with torch.no_grad():
+            outputs = model(input_ids=inputs['input_ids'], use_cache=True)
+            past_key_values = outputs.past_key_values
+            next_token_logits = outputs.logits[:, -1, :]
+        next_token = torch.argmax(next_token_logits, dim=-1).unsqueeze(0)
+    ttft = (time.perf_counter() - start_prefill) / ttft_times
+    
+    current_input = next_token
+    
+    t0 = time.perf_counter()
+    for _ in range(max_new_tokens - 1):
+        with torch.no_grad():
+            outputs = model(
+                input_ids=current_input,
+                past_key_values=past_key_values,
+                max_length=None,
+                use_cache=True
+            )
+            past_key_values = outputs.past_key_values
+            # print(past_key_values.layers[0].keys.shape)
+            next_token_logits = outputs.logits[:, -1, :]
+            next_token = torch.argmax(next_token_logits, dim=-1).unsqueeze(0)
+        current_input = next_token
+    t1 = time.perf_counter()
+    decode_times = t1 - t0
+    tpot = decode_times / (max_new_tokens)
+    # print(f"TTFT (Prefill)   : {ttft*1000:.2f} ms")
+    # print(f"TPOT (avg decode): {tpot*1000:.2f} ms")
+    return {
+        'ttft': ttft, 'tpot': tpot,
+        'total_time': (t1-start_prefill),
+        'num_tokens': max_new_tokens,
+    }
+
+
+@torch.no_grad
+def eval_perf(model, tokenizer, inputs, ttft_times=10, max_new_tokens=100):
     # text_input = text_input[0: len(text_input)//2]
     inputs_len = inputs['input_ids'].shape[1]
     # inputs = {k: v.to(model.device) for k, v in inputs.items()}
+
+    warmup_steps = 5
+    for _ in range(warmup_steps):
+        _ = model.generate(
+            **inputs,
+            max_new_tokens=max_new_tokens,
+            max_length = None,
+            pad_token_id=tokenizer.eos_token_id,
+            eos_token_id=tokenizer.eos_token_id
+        )
+
     start_time = time.perf_counter()
     for _ in range (ttft_times):
         model.generate(
             **inputs,
             max_new_tokens=1,
+            max_length = None,
             pad_token_id=tokenizer.eos_token_id,
             eos_token_id=tokenizer.eos_token_id,
         )
@@ -153,6 +216,7 @@ def eval_perf(model, tokenizer, inputs, ttft_times=4, max_new_tokens=100):
         outputs = model.generate(
             **inputs,
             max_new_tokens=max_new_tokens,
+            max_length = None,
             pad_token_id=tokenizer.eos_token_id,
             eos_token_id=tokenizer.eos_token_id,
         )
@@ -166,4 +230,100 @@ def eval_perf(model, tokenizer, inputs, ttft_times=4, max_new_tokens=100):
         'ttft': ttft, 'tpot': tpot,
         'total_time': total_time,
         'num_tokens': num_tokens,
+    }
+
+@torch.no_grad
+def eval_batch_perf(model, tokenizer, input_seq_len, batch_size, ttft_times=10, max_new_tokens=100):
+    input_ids = torch.randint(1,12, (batch_size, input_seq_len)).to(device)
+    attention_mask = torch.ones_like(input_ids).to(device)
+
+    warmup_steps = 5
+    for _ in range(warmup_steps):
+        _ = model.generate(input_ids, attention_mask=attention_mask,
+                           max_new_tokens=max_new_tokens, max_length = None,
+                           pad_token_id=tokenizer.eos_token_id)
+
+    start_time = time.perf_counter()
+    for _ in range (ttft_times):
+        model.generate(
+            input_ids, attention_mask=attention_mask,
+            max_new_tokens=1, max_length = None,
+            pad_token_id=tokenizer.eos_token_id,
+            eos_token_id=tokenizer.eos_token_id,
+        )
+    first_token_time = time.perf_counter()
+    ttft = (first_token_time - start_time) / ttft_times
+
+    start_time = time.perf_counter()
+    with torch.no_grad():
+        outputs = model.generate(
+            input_ids, attention_mask=attention_mask,
+            max_new_tokens=max_new_tokens, max_length = None,
+            pad_token_id=tokenizer.eos_token_id,
+            eos_token_id=tokenizer.eos_token_id,
+        )
+    finish_time = time.perf_counter()
+    num_tokens = (outputs[0].shape[0] - input_seq_len)
+    total_time = finish_time - start_time
+    if num_tokens > 1:
+        tpot = (total_time - ttft) / (num_tokens - 1)
+    else: tpot = 0
+    return {
+        'ttft': ttft, 'tpot': tpot,
+        'total_time': total_time,
+        'num_tokens': num_tokens,
+    }
+
+
+@torch.no_grad
+def eval_perf_v3(model, tokenizer, inputs, ttft_times=10, max_new_tokens=100, batch_size=1):
+    warmup_steps = 5
+    for _ in range(warmup_steps):
+        model.generate(
+            **inputs,
+            max_new_tokens=20,
+            max_length = None,
+            pad_token_id=tokenizer.eos_token_id,
+            eos_token_id=tokenizer.eos_token_id
+        )
+    attention_mask = inputs['attention_mask']
+    start_prefill = time.perf_counter()
+    for _ in range(ttft_times):
+        with torch.no_grad():
+            outputs = model(input_ids=inputs['input_ids'],attention_mask=attention_mask, use_cache=True)
+            past_key_values = outputs.past_key_values
+            last_token_indices = (attention_mask.sum(dim=1) - 1).long()
+        next_token_logits = outputs.logits[torch.arange(batch_size), last_token_indices]
+        next_tokens = torch.argmax(next_token_logits, dim=-1).unsqueeze(1)
+    ttft = (time.perf_counter() - start_prefill) / ttft_times
+    
+    current_input = next_tokens
+    new_attention_mask = torch.cat([attention_mask, torch.ones(batch_size, 1, device=model.device)], dim=1)
+    t0 = time.perf_counter()
+    for _ in range(max_new_tokens - 1):
+        with torch.no_grad():
+            outputs = model(
+                input_ids=current_input,
+                attention_mask=new_attention_mask,
+                past_key_values=past_key_values,
+                max_length=None,
+                use_cache=True
+            )
+            past_key_values = outputs.past_key_values
+            # print(past_key_values.layers[0].keys.shape)
+            next_token_logits = outputs.logits[:, -1, :]
+            next_tokens = torch.argmax(next_token_logits, dim=-1).unsqueeze(1)
+        current_input = next_tokens
+        new_attention_mask = torch.cat(
+            [new_attention_mask, torch.ones(batch_size, 1, device=model.device)], dim=1
+        )
+    t1 = time.perf_counter()
+    decode_times = t1 - t0
+    tpot = decode_times / (max_new_tokens)
+    # print(f"TTFT (Prefill)   : {ttft*1000:.2f} ms")
+    # print(f"TPOT (avg decode): {tpot*1000:.2f} ms")
+    return {
+        'ttft': ttft, 'tpot': tpot,
+        'total_time': (t1-start_prefill),
+        'num_tokens': max_new_tokens,
     }

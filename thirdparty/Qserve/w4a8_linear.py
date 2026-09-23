@@ -160,7 +160,9 @@ class W4A8Linear(torch.nn.Module):
     @torch.no_grad()
     def forward(self, input):
         intput_shape = input.shape
-        input = input.view(-1, intput_shape[-1])
+        
+        if len(intput_shape) > 2:
+            input = input.reshape(-1, intput_shape[-1])
 
         input_int8 = torch.empty_like(input, device='cuda', dtype=torch.int8)
         scale_x = torch.empty(input.shape[0], device='cuda', dtype=torch.float16)
@@ -168,7 +170,8 @@ class W4A8Linear(torch.nn.Module):
         output_buffer = torch.empty((input.shape[0], self.out_features), dtype=torch.float16, device='cuda')
 
         self.forward_per_group(input_int8, scale_x, output_buffer)
-        return output_buffer
+        # if len(intput_shape) == 2: return output_buffer #DEBUG
+        return output_buffer.reshape(intput_shape[0], intput_shape[1], -1)
 
     @classmethod
     def from_module(cls, linear, device, return_dtype = torch.float16, init_only=False, name = ''):

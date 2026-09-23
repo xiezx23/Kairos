@@ -31,10 +31,10 @@ def get_calibration_set(tokenizer, sample_num = 512, per_seq_len = 512, model_ty
         else:
             assert 0, print("Couldn't find dataset or calibration.pt")
 
-def generate_random_token_sequence(tokenizer, device, seq_length=100):
+def generate_random_token_sequence(tokenizer, device, seq_length=100, batch_size=1):
     vocab_size = tokenizer.vocab_size
-    input_ids = torch.randint(0, vocab_size, (1, seq_length)).to(device)
+    input_ids = torch.randint(0, vocab_size, (batch_size, seq_length)).to(device)
     # input_ids = torch.tensor([128 for _ in range(seq_length)]).to(device).view(1,seq_length)
     # Attention Mask(attention_mask)
-    attention_mask = torch.ones(1, seq_length).to(device)
+    attention_mask = torch.ones(batch_size, seq_length).to(device)
     return {'input_ids':input_ids, 'attention_mask':attention_mask}

@@ -17,7 +17,7 @@ dependencies = [
     "torch==2.6.0", "tokenizers>=0.12.1",
     "transformers==4.46.0",
     "datasets==2.21.0", "modelscope==1.28.0",
-    "setuptools==58", "pybind11",
+    "setuptools==82.0.1", "pybind11",
 
     "colorama", "matplotlib", "seaborn"
 ]

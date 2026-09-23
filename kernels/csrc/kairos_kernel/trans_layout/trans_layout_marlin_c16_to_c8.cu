@@ -54,7 +54,7 @@ __global__ void trans_layout_c16_to_c8_kernel(
     }
 }
 
-void trans_layout_c16_to_c8(
+void trans_layout_c16_to_c8_marlin(
         torch::Tensor &output,      // [K/16, N*16/8], dtype=torch.int32
         torch::Tensor &input        // [K/16, N*16/8], dtype=torch.int32
     ) {
@@ -109,3 +109,96 @@ void trans_layout_c16_to_c8(
 //         [ 864,  992,  872, 1000,  880, 1008,  888, 1016]]) ... of shape(32,32)
 // Every row (8 * int4) store in int32 
 // Every 4 row store in uint4, and they are grouped, the high and low bits can be permute together.
+
+__global__ void __launch_bounds__(256, 2) trans_layout_kernel(
+    const uint16_t* __restrict__ awq_packed,   // (N/4, K)  int16
+    int8_t*  __restrict__ qserve_packed,        // (N, K/2)  int8  <-- 修正: uint8_t -> int8_t
+    int N, int K
+) {
+    const int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    const int total = N * (K >> 1);
+    if (__builtin_expect(idx >= total, 0)) return;
+
+    const int K32 = K >> 5;
+    /* ---- QServe 输出位置分解 ---- */
+    int tmp = idx;
+    int k3_q = tmp & 3;       tmp >>= 2;
+    int n2_q = tmp & 1;       tmp >>= 1;
+    int k1_q = tmp & 1;       tmp >>= 1;
+    int k2_q = tmp & 3;       tmp >>= 2;
+    int n3_q = tmp & 7;       tmp >>= 3;
+    int k0_q = tmp % K32;     tmp  /= K32;
+    int n0_q = tmp;
+
+    const int n_base = (n0_q << 5) | (n2_q << 3) | n3_q;
+    const int k_base = (k0_q << 5) | (k1_q << 4) | (k2_q << 2) | k3_q;
+
+    /* ---- AWQ k 分量公共部分 ---- */
+    const int k_val = k_base;
+    const int k0_awq  = k_val >> 6;
+    const int k1_awq  = (k_val >> 5) & 1;
+    const int k2_awq  = (k_val >> 3) & 3;
+    const int k3_awq  = (k_val >> 1) & 3;
+    const int k4_awq  = k_val & 1;
+    const int k_flat_common = (k0_awq << 6) | (k1_awq << 3) | (k3_awq << 1) | k4_awq;
+
+    uint32_t result = 0;
+
+    /* ---- n1_q = 0 (低位 nibble) ---- */
+    {
+        const int n = n_base;
+        const int n0 = n >> 2;
+        const int n1_awq = n & 3;
+        const int k_flat = k_flat_common | (n1_awq << 4);
+        const uint16_t val16 = __ldg(awq_packed + n0 * K + k_flat);
+        const int shift = k2_awq << 2;
+
+        uint32_t nibble;
+        asm volatile ("bfe.u32 %0, %1, %2, 4;"
+                      : "=r"(nibble)
+                      : "r"((uint32_t)val16), "r"(shift));
+        result = nibble;
+    }
+    /* ---- n1_q = 1 (高位 nibble) ---- */
+    {
+        const int n = n_base | 16;          // n1_q = 1
+        const int n0 = n >> 2;
+        const int n1_awq = n & 3;
+        const int k_flat = k_flat_common | (n1_awq << 4);
+        const uint16_t val16 = __ldg(awq_packed + n0 * K + k_flat);
+        const int shift = k2_awq << 2;
+
+        uint32_t nibble;
+        asm volatile ("bfe.u32 %0, %1, %2, 4;"
+                      : "=r"(nibble)
+                      : "r"((uint32_t)val16), "r"(shift));
+
+        asm volatile ("bfi.b32 %0, %1, %2, 4, 4;"
+                      : "=r"(result)
+                      : "r"(nibble), "r"(result));
+    }
+    qserve_packed[idx] = static_cast<int8_t>(result);
+}
+
+torch::Tensor trans_layout_c16_to_c8_awq(torch::Tensor awq_packed, int N, int K) {
+    TORCH_CHECK(awq_packed.is_cuda(), "awq_packed must be a CUDA tensor");
+    TORCH_CHECK(awq_packed.dtype() == torch::kInt16,
+                "awq_packed must be int16, got ", awq_packed.dtype());
+    TORCH_CHECK(N % 32 == 0 && K % 64 == 0,
+                "N must be divisible by 32 and K by 64");
+
+    auto options = torch::TensorOptions().dtype(torch::kInt8).device(awq_packed.device());
+    auto qserve_packed = torch::empty({N, K / 2}, options);
+
+    const int total   = N * (K >> 1);
+    const int threads = 256;
+    const int blocks  = (total + threads - 1) / threads;
+
+    trans_layout_kernel<<<blocks, threads>>>(
+        reinterpret_cast<const uint16_t*>(awq_packed.data_ptr<int16_t>()),
+        // awq_packed.data_ptr<uint16_t>(),
+        qserve_packed.data_ptr<int8_t>(),   // <-- 修正: uint8_t -> int8_t
+        N, K
+    );
+    return qserve_packed;
+}

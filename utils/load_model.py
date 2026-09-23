@@ -33,7 +33,7 @@ def load_model_tokenizer(model_path, q_model_path, dtype = torch.float16):
             local_files_only = True,
             torch_dtype = dtype,
             # attn_implementation='flash_attention_2',
-            device_map  = "cpu"
+            # device_map  = "cpu" # Used in transformers v4
         ).eval()
     tokenizer = AutoTokenizer.from_pretrained(abs_model_path)
     return model, tokenizer
