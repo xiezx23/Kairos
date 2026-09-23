@@ -1,8 +1,10 @@
 # Kairos
-Kairos is a framework to accerelate quantized LLM inference.
-Our key idea is to decouple storage and computation.
-For storage, a 4-bit weight quantization is used to reduce memory overhead. 
-For computation, different quantization strategies are used to accelerate prefilling at runtime.
+Kairos is a workload-aware mpGEMM kernel switching framework for dynamic AI workloads on GPUs.
+Our key idea is to automatically select the most suitable kernel for dynamic workloads.
+We first build an offline-profiled, hardware-specific lookup table that maps workload characteristics to the optimal kernel.
+Then, we propose an adaptive activation matching method to dynamically align activation bit-widths with the selected kernel.
+Finally, we propose a memory-efficient weight conversion method that retains only 4-bit weights in HBM and generates other weight formats on demand.
+Evaluations demonstrate that Kairos achieves up to 2.19$\times$ speedup in GEMM workloads, up to 1.51$\times$ faster time-to-first-token (TTFT) and 1.44$\times$ faster time-per-output-token (TPOT) than state-of-the-art systems in LLM serving.
 
 ![Overview of Kairos](images/Kairos_overview.jpg) 
 We decouple the storage of weights of linear layers and the computation of linear layers.
